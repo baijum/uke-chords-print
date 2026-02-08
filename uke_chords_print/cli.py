@@ -13,7 +13,7 @@ import argparse
 import sys
 
 from .chord_db import list_all_chords, lookup_chord, CHORD_DB
-from .parser import parse_cli_args, parse_file, ChordVoicing
+from .parser import parse_cli_args, parse_file, ChordVoicing, PAGE_BREAK
 from .pdf_generator import generate_pdf
 
 
@@ -151,7 +151,8 @@ def main(argv: list[str] | None = None):
             rows=args.rows,
             show_root=args.show_root,
         )
-        print(f"Generated {len(voicings)} chord diagram(s) -> {output}")
+        chord_count = sum(1 for v in voicings if v is not PAGE_BREAK)
+        print(f"Generated {chord_count} chord diagram(s) -> {output}")
     except Exception as e:
         print(f"Error generating PDF: {e}", file=sys.stderr)
         sys.exit(1)

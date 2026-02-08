@@ -19,6 +19,8 @@ G
 Am
 F
 
+---
+
 # Key of G: I V vi IV
 G
 D

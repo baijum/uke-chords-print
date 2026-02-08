@@ -11,7 +11,7 @@ from reportlab.lib.units import mm, inch
 from reportlab.pdfgen import canvas
 from reportlab.graphics import renderPDF
 
-from .parser import ChordVoicing
+from .parser import ChordVoicing, PAGE_BREAK
 from .diagram import draw_chord_diagram, DIAGRAM_WIDTH, DIAGRAM_HEIGHT
 
 # Page margins
@@ -75,67 +75,81 @@ def generate_pdf(
     c.setTitle(title or "Ukulele Chord Diagrams")
     c.setAuthor("uke-chords-print")
 
-    total_chords = len(voicings)
+    # Split voicings into segments at PAGE_BREAK sentinels.
+    segments: list[list[ChordVoicing]] = []
+    current_segment: list[ChordVoicing] = []
+    for v in voicings:
+        if v is PAGE_BREAK:
+            segments.append(current_segment)
+            current_segment = []
+        else:
+            current_segment.append(v)
+    segments.append(current_segment)
+
     page_num = 0
 
-    for start_idx in range(0, total_chords, chords_per_page):
-        if page_num > 0:
-            c.showPage()
+    for segment in segments:
+        if not segment:
+            continue
 
-        page_voicings = voicings[start_idx:start_idx + chords_per_page]
+        for start_idx in range(0, len(segment), chords_per_page):
+            if page_num > 0:
+                c.showPage()
 
-        # Draw title on first page
-        title_offset = 0
-        if title and page_num == 0:
-            c.setFont("Helvetica-Bold", TITLE_FONT_SIZE)
+            page_voicings = segment[start_idx:start_idx + chords_per_page]
+
+            # Draw title on first page
+            title_offset = 0
+            if title and page_num == 0:
+                c.setFont("Helvetica-Bold", TITLE_FONT_SIZE)
+                c.drawCentredString(
+                    page_width / 2,
+                    page_height - MARGIN_TOP + 2 * mm,
+                    title,
+                )
+                title_offset = TITLE_HEIGHT
+
+            # Draw each chord diagram
+            for idx, voicing in enumerate(page_voicings):
+                col = idx % cols
+                row = idx // cols
+
+                # Position: top-left of this cell
+                # ReportLab origin is bottom-left, so we work from top
+                x = MARGIN_LEFT + col * cell_width
+                y = page_height - MARGIN_TOP - title_offset - row * cell_height
+
+                # Center the diagram within the cell
+                x_offset = (cell_width - DIAGRAM_WIDTH * scale) / 2
+                y_offset = (cell_height - DIAGRAM_HEIGHT * scale) / 2
+
+                # Hide "Root" inversion label unless --show-root is set
+                if not show_root and voicing.inversion == "Root":
+                    voicing.inversion = ""
+
+                # Draw the diagram
+                drawing = draw_chord_diagram(voicing)
+
+                # Render at position (x, y is the top of the cell, but
+                # renderPDF.draw uses bottom-left of the drawing)
+                draw_x = x + x_offset
+                draw_y = y - cell_height + y_offset
+
+                c.saveState()
+                c.translate(draw_x, draw_y)
+                c.scale(scale, scale)
+                renderPDF.draw(drawing, c, 0, 0)
+                c.restoreState()
+
+            # Page number footer
+            c.setFont("Helvetica", 8)
             c.drawCentredString(
                 page_width / 2,
-                page_height - MARGIN_TOP + 2 * mm,
-                title,
+                MARGIN_BOTTOM / 4,
+                f"Page {page_num + 1}",
             )
-            title_offset = TITLE_HEIGHT
 
-        # Draw each chord diagram
-        for idx, voicing in enumerate(page_voicings):
-            col = idx % cols
-            row = idx // cols
-
-            # Position: top-left of this cell
-            # ReportLab origin is bottom-left, so we work from top
-            x = MARGIN_LEFT + col * cell_width
-            y = page_height - MARGIN_TOP - title_offset - row * cell_height
-
-            # Center the diagram within the cell
-            x_offset = (cell_width - DIAGRAM_WIDTH * scale) / 2
-            y_offset = (cell_height - DIAGRAM_HEIGHT * scale) / 2
-
-            # Hide "Root" inversion label unless --show-root is set
-            if not show_root and voicing.inversion == "Root":
-                voicing.inversion = ""
-
-            # Draw the diagram
-            drawing = draw_chord_diagram(voicing)
-
-            # Render at position (x, y is the top of the cell, but
-            # renderPDF.draw uses bottom-left of the drawing)
-            draw_x = x + x_offset
-            draw_y = y - cell_height + y_offset
-
-            c.saveState()
-            c.translate(draw_x, draw_y)
-            c.scale(scale, scale)
-            renderPDF.draw(drawing, c, 0, 0)
-            c.restoreState()
-
-        # Page number footer
-        c.setFont("Helvetica", 8)
-        c.drawCentredString(
-            page_width / 2,
-            MARGIN_BOTTOM / 4,
-            f"Page {page_num + 1}",
-        )
-
-        page_num += 1
+            page_num += 1
 
     c.save()
     return output_path

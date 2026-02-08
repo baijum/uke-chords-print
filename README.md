@@ -48,6 +48,8 @@ python3 -m uke_chords_print [CHORDS...] [OPTIONS]
 | `--paper` | `a4` | Paper size: `a4` or `letter` |
 | `--cols` | `4` | Number of columns per page |
 | `--rows` | `4` | Number of rows per page |
+| `--single` | | Show only the primary voicing for each chord (useful for progressions/songs) |
+| `--show-root` | | Show 'Root' inversion label (hidden by default; non-root inversions always show) |
 | `--list` | | List all chords in the built-in database and exit |
 | `--help`, `-h` | | Show help message and exit |
 
@@ -95,6 +97,14 @@ F, 2010, fingers=2_1_
 
 # Higher position chord with starting fret
 Dm7, 7988, fingers=1423, starting_fret=6
+
+---
+
+# A line containing only --- forces a new page in the PDF.
+# Useful for separating sections (e.g., different keys).
+G
+D
+Em
 ```
 
 **Supported fields per line (comma-separated):**

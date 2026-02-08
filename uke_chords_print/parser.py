@@ -15,6 +15,7 @@ Text file format (one chord per line):
   - C, 0003                    -> name with explicit frets
   - C, 0003, fingers=___3      -> with fingering
   - C, 0003, fingers=___3, starting_fret=3  -> with starting fret
+  - ---                         -> force a new page in the PDF
   - # comment lines are ignored
   - blank lines are ignored
 """
@@ -35,6 +36,10 @@ class ChordVoicing:
     notes: str = ""     # e.g., "G C E C"
     inversion: str = ""  # e.g., "Root", "1st Inv"
     starting_fret: int = 1
+
+
+# Sentinel object used to signal a page break in the voicings list.
+PAGE_BREAK = ChordVoicing(name="__PAGE_BREAK__", frets="0000")
 
 
 def _parse_fret_value(ch: str) -> int:
@@ -105,6 +110,10 @@ def parse_file_line(line: str, single: bool = False) -> list[ChordVoicing]:
     line = line.strip()
     if not line or line.startswith("#"):
         return []
+
+    # Page break directive
+    if line == "---":
+        return [PAGE_BREAK]
 
     # Remove inline comments
     if " #" in line:
