@@ -37,6 +37,7 @@ def generate_pdf(
     paper: str = "letter",
     cols: int = 4,
     rows: int = 5,
+    show_root: bool = False,
 ) -> str:
     """
     Generate a PDF with chord diagrams laid out in a grid.
@@ -107,6 +108,10 @@ def generate_pdf(
             # Center the diagram within the cell
             x_offset = (cell_width - DIAGRAM_WIDTH * scale) / 2
             y_offset = (cell_height - DIAGRAM_HEIGHT * scale) / 2
+
+            # Hide "Root" inversion label unless --show-root is set
+            if not show_root and voicing.inversion == "Root":
+                voicing.inversion = ""
 
             # Draw the diagram
             drawing = draw_chord_diagram(voicing)

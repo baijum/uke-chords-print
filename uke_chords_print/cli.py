@@ -74,6 +74,12 @@ def build_parser() -> argparse.ArgumentParser:
         dest="list_chords",
         help="List all chords in the built-in database and exit",
     )
+    parser.add_argument(
+        "--show-root",
+        action="store_true",
+        dest="show_root",
+        help="Show 'Root' inversion label (hidden by default; non-root inversions always show)",
+    )
 
     return parser
 
@@ -138,6 +144,7 @@ def main(argv: list[str] | None = None):
             paper=args.paper,
             cols=args.cols,
             rows=args.rows,
+            show_root=args.show_root,
         )
         print(f"Generated {len(voicings)} chord diagram(s) -> {output}")
     except Exception as e:
