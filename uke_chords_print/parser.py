@@ -16,6 +16,7 @@ Text file format (one chord per line):
   - C, 0003, fingers=___3      -> with fingering
   - C, 0003, fingers=___3, starting_fret=3  -> with starting fret
   - ---                         -> force a new page in the PDF
+  - = Section Heading            -> section heading rendered in the PDF
   - # comment lines are ignored
   - blank lines are ignored
 """
@@ -40,6 +41,16 @@ class ChordVoicing:
 
 # Sentinel object used to signal a page break in the voicings list.
 PAGE_BREAK = ChordVoicing(name="__PAGE_BREAK__", frets="0000")
+
+
+def make_heading(text: str) -> ChordVoicing:
+    """Create a heading sentinel carrying the heading text in the notes field."""
+    return ChordVoicing(name="__HEADING__", frets="0000", notes=text)
+
+
+def is_heading(v: ChordVoicing) -> bool:
+    """Check whether a ChordVoicing is a heading sentinel."""
+    return v.name == "__HEADING__"
 
 
 def _parse_fret_value(ch: str) -> int:
@@ -114,6 +125,10 @@ def parse_file_line(line: str, single: bool = False) -> list[ChordVoicing]:
     # Page break directive
     if line == "---":
         return [PAGE_BREAK]
+
+    # Section heading
+    if line.startswith("= "):
+        return [make_heading(line[2:].strip())]
 
     # Remove inline comments
     if " #" in line:

@@ -2,30 +2,29 @@
 # ============================
 # The building blocks of jazz harmony, adapted for ukulele.
 
-# --- ii V I (The most important jazz progression) ---
-# Found in almost every jazz standard.
-#
-# Key of C
+= ii V I -- Key of C
+# The most important jazz progression.
 Dm7
 G7
 Cmaj7
 
-# Key of G
+= ii V I -- Key of G
 Am7
 D7
 Gmaj7
 
-# --- I vi ii V (Rhythm changes / ice cream changes) ---
+---
+
+= I vi ii V -- Key of C
 # Songs: I Got Rhythm, Blue Moon, Heart and Soul
-#
-# Key of C
 C
 Am7
 Dm7
 G7
 
-# --- ii V I with minor ii ---
-# Key of F
+---
+
+= ii V I -- Key of F
 Gm7
 C7
 Fmaj7

@@ -13,7 +13,7 @@
 #   Paparazzi -- Lady Gaga
 #   Can You Feel The Love Tonight -- Elton John
 
-# Key of C: I V vi IV
+= Key of C
 C
 G
 Am
@@ -21,7 +21,7 @@ F
 
 ---
 
-# Key of G: I V vi IV
+= Key of G
 G
 D
 Em

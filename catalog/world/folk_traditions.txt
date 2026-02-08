@@ -2,68 +2,58 @@
 # =======================================
 # Traditional folk songs from many cultures, arranged for ukulele.
 
-# --- Greensleeves -- English (16th century) ---
-# Key of Am
+= Greensleeves -- English
 Am
 G
 Em
 E
 
-# --- Auld Lang Syne -- Scottish (Robert Burns) ---
-# Key of C
+= Auld Lang Syne -- Scottish
 C
 F
 G
 Am
 
-# --- Waltzing Matilda -- Australian (Banjo Paterson) ---
-# Key of C
+= Waltzing Matilda -- Australian
 C
 F
 G
 Am
 
-# --- Hava Nagila -- Israeli traditional ---
-# Key of Am
+= Hava Nagila -- Israeli
 Am
 Dm
 E
 E7
 
-# --- Scarborough Fair -- English traditional ---
-# Key of Am
+= Scarborough Fair -- English
 Am
 G
 C
 D
 
-# --- Sakura (Cherry Blossoms) -- Japanese traditional ---
-# Key of Am, just 2 chords
+= Sakura -- Japanese
 Am
 Em
 
-# --- Danny Boy (Londonderry Air) -- Irish traditional ---
-# Key of C
+= Danny Boy -- Irish
 C
 F
 G
 Am
 Em
 
-# --- La Cucaracha -- Mexican traditional ---
-# Key of C
+= La Cucaracha -- Mexican
 C
 F
 G
 
-# --- Kalinka -- Russian traditional ---
-# Key of Am
+= Kalinka -- Russian
 Am
 Dm
 E
 
-# --- Arirang -- Korean traditional ---
-# Key of Am (simplified)
+= Arirang -- Korean
 Am
 Dm
 Em

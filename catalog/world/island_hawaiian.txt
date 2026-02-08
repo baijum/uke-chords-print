@@ -3,55 +3,47 @@
 # Hawaiian, reggae, and island-style songs.
 # The ukulele's home turf -- these songs were made for this instrument!
 
-# --- Aloha Oe -- Queen Liliuokalani (Hawaiian) ---
-# Key of C
+= Aloha Oe -- Queen Liliuokalani
 C
 F
 G
 G7
 
-# --- Somewhere Over the Rainbow / What a Wonderful World -- IZ ---
-# Key of C (the definitive ukulele song)
+= Over the Rainbow -- IZ
 C
 Em
 F
 G
 Am
 
-# --- Three Little Birds -- Bob Marley (Reggae) ---
-# Key of A
+= Three Little Birds -- Bob Marley
 A
 D
 E
 
-# --- No Woman No Cry -- Bob Marley (Reggae) ---
-# Key of C
+= No Woman No Cry -- Bob Marley
 C
 G
 Am
 F
 
-# --- Don't Worry Be Happy -- Bobby McFerrin ---
-# Key of C
+= Don't Worry Be Happy -- Bobby McFerrin
 C
 Dm
 F
 
-# --- Red Red Wine -- UB40 (Reggae) ---
-# Key of C
+= Red Red Wine -- UB40
 C
 F
 G
 
-# --- Is This Love -- Bob Marley (Reggae) ---
-# Key of C (simplified)
+= Is This Love -- Bob Marley
 C
 F
 G
 Am
 
-# --- Pearly Shells -- Don Ho (Hawaiian) ---
-# Key of C
+= Pearly Shells -- Don Ho
 C
 F
 G

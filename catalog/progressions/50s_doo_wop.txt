@@ -12,13 +12,15 @@
 #   Unchained Melody -- The Righteous Brothers
 #   Donna -- Ritchie Valens
 
-# Key of C: I vi IV V
+= Key of C
 C
 Am
 F
 G
 
-# Key of G: I vi IV V
+---
+
+= Key of G
 G
 Em
 C

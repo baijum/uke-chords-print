@@ -3,47 +3,47 @@
 # Classic songs everyone knows -- perfect for group singing.
 # Most use just 3-4 chords.
 
-# --- You Are My Sunshine ---
+= You Are My Sunshine
 C
 F
 G
 G7
 
-# --- This Land Is Your Land -- Woody Guthrie ---
+= This Land Is Your Land -- Woody Guthrie
 C
 F
 G
 
-# --- Blowin' in the Wind -- Bob Dylan ---
+= Blowin' in the Wind -- Bob Dylan
 C
 F
 G
 
-# --- Leaving on a Jet Plane -- John Denver ---
+= Leaving on a Jet Plane -- John Denver
 C
 F
 G
 
-# --- Lean on Me -- Bill Withers ---
+= Lean on Me -- Bill Withers
 C
 F
 G
 Am
 Em
 
-# --- Puff the Magic Dragon -- Peter, Paul and Mary ---
+= Puff the Magic Dragon
 C
 Em
 F
 G
 
-# --- Home on the Range ---
+= Home on the Range
 C
 F
 G
 G7
 
-# --- Kumbaya ---
+= Kumbaya
 C
 F
 G

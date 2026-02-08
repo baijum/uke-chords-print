@@ -15,19 +15,23 @@
 #   Rock Around the Clock -- Bill Haley
 #   Sweet Home Chicago -- Robert Johnson
 
-# Key of C (with dominant 7ths)
+= Key of C
 C
 C7
 F
 G7
 
-# Key of G (with dominant 7ths)
+---
+
+= Key of G
 G
 G7
 C
 D7
 
-# Key of A (with dominant 7ths)
+---
+
+= Key of A
 A
 A7
 D

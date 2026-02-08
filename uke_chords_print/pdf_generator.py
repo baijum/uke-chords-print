@@ -11,7 +11,7 @@ from reportlab.lib.units import mm, inch
 from reportlab.pdfgen import canvas
 from reportlab.graphics import renderPDF
 
-from .parser import ChordVoicing, PAGE_BREAK
+from .parser import ChordVoicing, PAGE_BREAK, is_heading
 from .diagram import draw_chord_diagram, DIAGRAM_WIDTH, DIAGRAM_HEIGHT
 
 # Page margins
@@ -23,6 +23,9 @@ MARGIN_RIGHT = 0.25 * inch
 # Title area
 TITLE_HEIGHT = 0.15 * inch
 TITLE_FONT_SIZE = 16
+
+# Section heading
+HEADING_FONT_SIZE = 14
 
 PAGE_SIZES = {
     "letter": letter,
@@ -109,7 +112,7 @@ def generate_pdf(
                 )
                 title_offset = TITLE_HEIGHT
 
-            # Draw each chord diagram
+            # Draw each chord diagram (or section heading)
             for idx, voicing in enumerate(page_voicings):
                 col = idx % cols
                 row = idx // cols
@@ -118,6 +121,16 @@ def generate_pdf(
                 # ReportLab origin is bottom-left, so we work from top
                 x = MARGIN_LEFT + col * cell_width
                 y = page_height - MARGIN_TOP - title_offset - row * cell_height
+
+                if is_heading(voicing):
+                    # Render section heading centred in the cell
+                    c.setFont("Helvetica-Bold", HEADING_FONT_SIZE)
+                    c.drawCentredString(
+                        x + cell_width / 2,
+                        y - cell_height / 2 - HEADING_FONT_SIZE / 4,
+                        voicing.notes,
+                    )
+                    continue
 
                 # Center the diagram within the cell
                 x_offset = (cell_width - DIAGRAM_WIDTH * scale) / 2

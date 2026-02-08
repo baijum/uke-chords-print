@@ -98,13 +98,17 @@ F, 2010, fingers=2_1_
 # Higher position chord with starting fret
 Dm7, 7988, fingers=1423, starting_fret=6
 
+= Key of G
+# A line starting with = is a section heading rendered in the PDF.
+
+G
+D
+Em
+
 ---
 
 # A line containing only --- forces a new page in the PDF.
 # Useful for separating sections (e.g., different keys).
-G
-D
-Em
 ```
 
 **Supported fields per line (comma-separated):**
@@ -117,6 +121,14 @@ Em
 | `starting_fret=` | No | `starting_fret=5` | First fret shown on diagram (for higher positions) |
 | `notes=` | No | `notes=G C E C` | Note names shown below the fretboard |
 | `inversion=` | No | `inversion=Root` | Inversion label (Root, 1st Inv, 2nd Inv) |
+
+**Special directives (standalone lines):**
+
+| Syntax | Description |
+|--------|-------------|
+| `= Heading text` | Section heading rendered as bold text in the PDF (occupies one grid cell) |
+| `---` | Force a page break -- subsequent chords start on a new page |
+| `# ...` | Comment (ignored) |
 
 An example input file is included: [`example_chords.txt`](example_chords.txt).
 
