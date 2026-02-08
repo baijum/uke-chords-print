@@ -1,0 +1,21 @@
+# Example Ukulele Chord Sheet
+# ===========================
+# Lines starting with # are comments.
+# Format: ChordName [, frets [, fingers=XXXX] [, starting_fret=N]]
+
+# --- Essential Beginner Chords ---
+C
+Am
+F
+G
+G7
+
+# --- More Common Chords ---
+D
+Em
+A7
+Dm
+
+# --- Explicit voicing example ---
+C, 0003, fingers=0003
+F, 2010, fingers=2010
