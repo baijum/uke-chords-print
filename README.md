@@ -196,6 +196,21 @@ python3 -m uke_chords_print --file example_chords.txt \
 python3 -m uke_chords_print Am G7 "F:2010:fingers=2_1_" -o mixed.pdf
 ```
 
+## Chord Sheet Catalog
+
+A ready-to-use collection of chord sheet files is included in the [`catalog/`](catalog/) directory, organized by category:
+
+- **Chord Progressions** -- Pop (I-V-vi-IV), 50s Doo-Wop, 12-Bar Blues, Classic Rock, Jazz
+- **Hit Songs** -- Beginner hits, pop classics, campfire singalongs
+- **Classical Music** -- Ode to Joy, Pachelbel Canon, Amazing Grace, Greensleeves
+- **World Music** -- Latin/Bossa Nova, Hawaiian/Reggae, folk traditions from 10+ countries
+
+```bash
+python3 -m uke_chords_print --file catalog/songs/beginner_hits.txt -t "Beginner Hits"
+```
+
+See the full list in the [Catalog README](catalog/README.md).
+
 ## Project Structure
 
 ```
@@ -208,6 +223,11 @@ uke-chords-print/
     parser.py            # Input parsing (CLI args + text files)
     diagram.py           # Chord diagram renderer (ReportLab)
     pdf_generator.py     # Page layout and PDF output
+  catalog/               # Pre-made chord sheet files (see catalog/README.md)
+    progressions/        # Named chord progressions
+    songs/               # Hit songs by difficulty
+    classical/           # Classical music
+    world/               # World music and folk traditions
   example_chords.txt     # Sample input file
   requirements.txt       # Python dependencies
   README.md

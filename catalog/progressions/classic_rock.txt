@@ -1,0 +1,34 @@
+# Classic Rock Progressions
+# ==========================
+# Common chord progressions found across rock music from
+# the 1960s through today.
+
+# --- I IV V (The simplest rock progression) ---
+# Songs: La Bamba, Twist and Shout, Wild Thing, Louie Louie
+#
+# Key of C
+C
+F
+G
+
+# Key of G
+G
+C
+D
+
+# --- I bVII IV (The rock anthem progression) ---
+# Songs: Sweet Home Alabama, Born to Run
+#
+# Key of C
+C
+Bb
+F
+
+# --- Minor: i bVII bVI V ---
+# Songs: Hit the Road Jack, Sultans of Swing
+#
+# Key of Am
+Am
+G
+F
+E

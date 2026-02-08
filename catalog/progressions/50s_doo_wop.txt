@@ -1,0 +1,25 @@
+# 50s Doo-Wop -- I vi IV V Progression
+# =======================================
+# Also known as the "doo-wop progression," "Heart and Soul chords,"
+# or "ice cream changes." Hugely popular in 1950s rock and roll,
+# doo-wop, and early pop. Still used in modern music.
+#
+# Songs using this progression:
+#   Stand By Me -- Ben E. King
+#   Earth Angel -- The Penguins
+#   Blue Moon -- The Marcels
+#   Every Breath You Take -- The Police
+#   Unchained Melody -- The Righteous Brothers
+#   Donna -- Ritchie Valens
+
+# Key of C: I vi IV V
+C
+Am
+F
+G
+
+# Key of G: I vi IV V
+G
+Em
+C
+D

@@ -1,0 +1,34 @@
+# 12-Bar Blues
+# =============
+# The foundation of blues, rock and roll, and early R&B.
+# The progression spans 12 bars (measures):
+#   Bars 1-4:   I  I  I  I
+#   Bars 5-6:   IV IV
+#   Bars 7-8:   I  I
+#   Bars 9:     V
+#   Bar 10:     IV
+#   Bars 11-12: I  V (turnaround)
+#
+# Songs using this progression:
+#   Johnny B. Goode -- Chuck Berry
+#   Hound Dog -- Elvis Presley
+#   Rock Around the Clock -- Bill Haley
+#   Sweet Home Chicago -- Robert Johnson
+
+# Key of C (with dominant 7ths)
+C
+C7
+F
+G7
+
+# Key of G (with dominant 7ths)
+G
+G7
+C
+D7
+
+# Key of A (with dominant 7ths)
+A
+A7
+D
+E7

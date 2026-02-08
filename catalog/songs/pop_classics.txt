@@ -1,0 +1,46 @@
+# Pop Classics
+# ==============
+# Iconic pop and rock songs with 4-6 chords.
+# A step up from beginner songs -- slightly more variety.
+
+# --- Hallelujah -- Leonard Cohen / Jeff Buckley ---
+C
+Am
+F
+G
+E
+
+# --- Can't Help Falling in Love -- Elvis Presley ---
+C
+Em
+Am
+F
+G
+G7
+
+# --- Country Roads -- John Denver ---
+C
+F
+G
+Am
+
+# --- What a Wonderful World -- Louis Armstrong ---
+C
+Dm
+Em
+F
+G
+Am
+
+# --- Hey Jude -- The Beatles ---
+C
+F
+G
+G7
+Am
+
+# --- Don't Stop Believin' -- Journey ---
+C
+G
+Am
+F

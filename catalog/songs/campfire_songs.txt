@@ -1,0 +1,49 @@
+# Campfire Singalong Songs
+# =========================
+# Classic songs everyone knows -- perfect for group singing.
+# Most use just 3-4 chords.
+
+# --- You Are My Sunshine ---
+C
+F
+G
+G7
+
+# --- This Land Is Your Land -- Woody Guthrie ---
+C
+F
+G
+
+# --- Blowin' in the Wind -- Bob Dylan ---
+C
+F
+G
+
+# --- Leaving on a Jet Plane -- John Denver ---
+C
+F
+G
+
+# --- Lean on Me -- Bill Withers ---
+C
+F
+G
+Am
+Em
+
+# --- Puff the Magic Dragon -- Peter, Paul and Mary ---
+C
+Em
+F
+G
+
+# --- Home on the Range ---
+C
+F
+G
+G7
+
+# --- Kumbaya ---
+C
+F
+G

@@ -1,0 +1,55 @@
+# Classical Music for Ukulele
+# ============================
+# Timeless classical pieces simplified to their core chord progressions.
+# Great for building chord familiarity with beautiful, well-known melodies.
+
+# --- Ode to Joy -- Beethoven (Symphony No. 9) ---
+# Key of C, just 3 chords
+C
+F
+G
+
+# --- Pachelbel Canon ---
+# The famous repeating progression, transposed to C.
+# Original: D A Bm F#m G D G A
+C
+G
+Am
+Em
+F
+G
+
+# --- Auld Lang Syne -- Traditional / Robert Burns ---
+# Key of C
+C
+F
+G
+Am
+
+# --- Amazing Grace -- John Newton ---
+# Key of C
+C
+F
+G
+G7
+
+# --- Greensleeves -- Traditional English ---
+# Key of Am (minor)
+Am
+G
+Em
+E
+
+# --- Jesu, Joy of Man's Desiring -- J.S. Bach ---
+# Key of C (simplified)
+C
+Em
+F
+G
+
+# --- Morning Mood -- Edvard Grieg (Peer Gynt Suite) ---
+# Key of C (simplified)
+C
+F
+G
+Am

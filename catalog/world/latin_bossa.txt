@@ -1,0 +1,49 @@
+# Latin and Bossa Nova
+# =====================
+# Chord sets for classic Latin American and Brazilian songs.
+# The ukulele's bright tone suits these styles beautifully.
+
+# --- La Bamba -- Ritchie Valens (Mexican folk/rock) ---
+# Key of C, just 3 chords
+C
+F
+G
+
+# --- Guantanamera -- Jose Marti / Pete Seeger (Cuban) ---
+# Key of C
+C
+F
+G
+
+# --- Cielito Lindo -- Traditional Mexican ---
+# Key of C
+C
+F
+G
+G7
+
+# --- Chan Chan -- Buena Vista Social Club (Cuban) ---
+# Key of Am
+Am
+Em
+G
+D
+
+# --- Besame Mucho -- Consuelo Velazquez (Mexican bolero) ---
+# Key of Am
+Am
+Dm
+E
+E7
+
+# --- Girl from Ipanema -- Antonio Carlos Jobim (Bossa Nova) ---
+# Simplified to key of C
+C
+D7
+Gm
+
+# --- Mas Que Nada -- Jorge Ben (Brazilian) ---
+# Key of Am (simplified)
+Am
+Dm
+E7

@@ -1,0 +1,31 @@
+# Jazz Essential Progressions
+# ============================
+# The building blocks of jazz harmony, adapted for ukulele.
+
+# --- ii V I (The most important jazz progression) ---
+# Found in almost every jazz standard.
+#
+# Key of C
+Dm7
+G7
+Cmaj7
+
+# Key of G
+Am7
+D7
+Gmaj7
+
+# --- I vi ii V (Rhythm changes / ice cream changes) ---
+# Songs: I Got Rhythm, Blue Moon, Heart and Soul
+#
+# Key of C
+C
+Am7
+Dm7
+G7
+
+# --- ii V I with minor ii ---
+# Key of F
+Gm7
+C7
+Fmaj7

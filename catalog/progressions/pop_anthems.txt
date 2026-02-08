@@ -1,0 +1,26 @@
+# Pop Anthems -- I V vi IV Progression
+# ======================================
+# The most popular chord progression in modern pop music.
+# Also known as the "Axis progression" or the "four chord song."
+#
+# Songs using this progression:
+#   Let It Be -- The Beatles
+#   I'm Yours -- Jason Mraz
+#   No Woman No Cry -- Bob Marley
+#   With Or Without You -- U2
+#   Someone Like You -- Adele
+#   She Will Be Loved -- Maroon 5
+#   Paparazzi -- Lady Gaga
+#   Can You Feel The Love Tonight -- Elton John
+
+# Key of C: I V vi IV
+C
+G
+Am
+F
+
+# Key of G: I V vi IV
+G
+D
+Em
+C

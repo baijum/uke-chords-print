@@ -1,0 +1,53 @@
+# Beginner Hit Songs
+# ====================
+# Popular songs you can play with 2-4 simple chords.
+# Perfect for your first ukulele practice sessions.
+# Each section lists the chords needed for one song.
+
+# --- Riptide -- Vance Joy ---
+Am
+G
+C
+F
+
+# --- Stand By Me -- Ben E. King ---
+C
+Am
+F
+G7
+
+# --- I'm Yours -- Jason Mraz ---
+C
+G
+Am
+F
+
+# --- Let It Be -- The Beatles ---
+C
+G
+Am
+F
+
+# --- Hey Soul Sister -- Train ---
+C
+G
+Am
+F
+
+# --- Three Little Birds -- Bob Marley ---
+A
+D
+E
+
+# --- You Are My Sunshine ---
+C
+F
+G
+G7
+
+# --- Somewhere Over the Rainbow -- IZ ---
+C
+Em
+F
+G
+Am
