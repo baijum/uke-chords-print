@@ -80,6 +80,11 @@ def build_parser() -> argparse.ArgumentParser:
         dest="show_root",
         help="Show 'Root' inversion label (hidden by default; non-root inversions always show)",
     )
+    parser.add_argument(
+        "--single",
+        action="store_true",
+        help="Show only the primary voicing for each chord (default: show all voicings)",
+    )
 
     return parser
 
@@ -115,7 +120,7 @@ def main(argv: list[str] | None = None):
 
     if args.file:
         try:
-            voicings.extend(parse_file(args.file))
+            voicings.extend(parse_file(args.file, single=args.single))
         except FileNotFoundError:
             print(f"Error: File not found: {args.file}", file=sys.stderr)
             sys.exit(1)
@@ -125,7 +130,7 @@ def main(argv: list[str] | None = None):
 
     if args.chords:
         try:
-            voicings.extend(parse_cli_args(args.chords))
+            voicings.extend(parse_cli_args(args.chords, single=args.single))
         except ValueError as e:
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)

@@ -14,7 +14,7 @@ for f in catalog/progressions/*.txt catalog/songs/*.txt catalog/classical/*.txt 
     title=$(head -1 "$f" | sed 's/^# *//')
     out="$OUTDIR/$name.pdf"
     echo "  $f -> $out"
-    python3 -m uke_chords_print --file "$f" -t "$title" -o "$out"
+    python3 -m uke_chords_print --file "$f" -t "$title" --single -o "$out"
 done
 
 echo "Done. PDFs saved to $OUTDIR/"

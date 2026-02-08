@@ -56,7 +56,7 @@ def validate_frets(frets: str) -> bool:
     return True
 
 
-def parse_cli_arg(arg: str) -> list[ChordVoicing]:
+def parse_cli_arg(arg: str, single: bool = False) -> list[ChordVoicing]:
     """
     Parse a single CLI argument into chord voicings.
 
@@ -70,7 +70,7 @@ def parse_cli_arg(arg: str) -> list[ChordVoicing]:
 
     if len(parts) == 1:
         # Just a chord name -> look up from database
-        return _lookup_voicings(name)
+        return _lookup_voicings(name, single=single)
 
     # Explicit voicing
     frets = parts[1].strip()
@@ -91,7 +91,7 @@ def parse_cli_arg(arg: str) -> list[ChordVoicing]:
     return [ChordVoicing(name=name, frets=frets, **kwargs)]
 
 
-def parse_file_line(line: str) -> list[ChordVoicing]:
+def parse_file_line(line: str, single: bool = False) -> list[ChordVoicing]:
     """
     Parse a single line from a text input file.
 
@@ -115,7 +115,7 @@ def parse_file_line(line: str) -> list[ChordVoicing]:
 
     if len(parts) == 1:
         # Just a chord name
-        return _lookup_voicings(name)
+        return _lookup_voicings(name, single=single)
 
     # Has explicit frets
     frets = parts[1]
@@ -140,34 +140,39 @@ def parse_file_line(line: str) -> list[ChordVoicing]:
     return [ChordVoicing(name=name, frets=frets, **kwargs)]
 
 
-def parse_file(filepath: str) -> list[ChordVoicing]:
+def parse_file(filepath: str, single: bool = False) -> list[ChordVoicing]:
     """Parse an entire text file and return all chord voicings."""
     voicings = []
     with open(filepath, "r") as f:
         for lineno, line in enumerate(f, 1):
             try:
-                voicings.extend(parse_file_line(line))
+                voicings.extend(parse_file_line(line, single=single))
             except ValueError as e:
                 raise ValueError(f"Line {lineno}: {e}") from e
     return voicings
 
 
-def parse_cli_args(args: list[str]) -> list[ChordVoicing]:
+def parse_cli_args(args: list[str], single: bool = False) -> list[ChordVoicing]:
     """Parse a list of CLI arguments into chord voicings."""
     voicings = []
     for arg in args:
-        voicings.extend(parse_cli_arg(arg))
+        voicings.extend(parse_cli_arg(arg, single=single))
     return voicings
 
 
-def _lookup_voicings(name: str) -> list[ChordVoicing]:
-    """Look up chord voicings from the built-in database."""
+def _lookup_voicings(name: str, single: bool = False) -> list[ChordVoicing]:
+    """Look up chord voicings from the built-in database.
+
+    If single=True, return only the first (primary) voicing.
+    """
     entries = lookup_chord(name)
     if entries is None:
         raise ValueError(
             f"Chord '{name}' not found in database. "
             f"Use --list to see available chords, or provide explicit frets."
         )
+    if single:
+        entries = entries[:1]
     voicings = []
     for entry in entries:
         voicings.append(ChordVoicing(
