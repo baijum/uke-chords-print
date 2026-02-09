@@ -1,0 +1,27 @@
+# Popular Ukulele Chords
+# =====================
+# The most widely used chords in western music: major, minor, and seventh.
+
+= Major
+C
+D
+E
+F
+G
+A
+B
+Ab
+Bb
+Eb
+---
+= Minor
+Am
+Bm
+Cm
+Dm
+Em
+= Seventh
+Cmaj7
+Dm7
+F7
+G7
