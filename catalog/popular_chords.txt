@@ -12,7 +12,7 @@ A
 B
 Ab
 Bb
-Eb
+Eb, 0331, fingers=0231, notes=G Eb G Bb
 ---
 = Minor
 Am
