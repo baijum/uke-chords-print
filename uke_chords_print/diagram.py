@@ -214,7 +214,7 @@ def draw_chord_diagram(voicing: ChordVoicing) -> Drawing:
                     fontSize=NOTE_SIZE,
                     fillColor=LABEL_COLOR,
                     textAnchor="middle",
-                    fontName="Helvetica",
+                    fontName="Helvetica-Bold",
                 ))
 
     # --- Frets string below notes ---
