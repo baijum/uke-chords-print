@@ -5,12 +5,12 @@
 = Major
 C
 D
-E
+E, 4447, fingers=1114, notes=B E Ab E, starting_fret=4
 F
 G
 A
-B
-Ab
+B, 4322, fingers=3211, notes=A D# F# B
+Ab, 5046, fingers=2013, notes=C C Ab Eb, starting_fret=4
 Bb
 Eb, 0331, fingers=0231, notes=G Eb G Bb
 ---
@@ -22,6 +22,6 @@ Dm
 Em
 = Seventh
 Cmaj7
-Dm7
+Dm7, 2213, fingers=2314, notes=A D F C
 F7
 G7
