@@ -9,7 +9,7 @@ mkdir -p "$OUTDIR"
 
 echo "Generating catalog PDFs..."
 
-for f in catalog/popular_chords.txt catalog/progressions/*.txt catalog/songs/*.txt catalog/classical/*.txt catalog/world/*.txt; do
+for f in catalog/popular_chords.txt catalog/all_chords.txt catalog/challenging_chords.txt catalog/progressions/*.txt catalog/songs/*.txt catalog/classical/*.txt catalog/world/*.txt; do
     name=$(basename "$f" .txt)
     title=$(head -1 "$f" | sed 's/^# *//')
     out="$OUTDIR/$name.pdf"
