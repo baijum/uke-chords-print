@@ -182,7 +182,7 @@ def _difficulty_label(score: float) -> str:
     """Map a numeric difficulty score to a human-readable label."""
     if score <= 4:
         return "easy"
-    elif score <= 8:
+    elif score <= 11:
         return "moderate"
     elif score <= 15:
         return "hard"

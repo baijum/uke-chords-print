@@ -6,45 +6,23 @@
 # popular_chords.txt instead, as they are widely used despite being hard.
 
 = Hard
-Aaug, 2110, fingers=2110, notes=A C# E# A
-Abaug, 1003, fingers=1003, notes=Ab C E C
-Abmaj7, 0343, fingers=0121, notes=G Eb Ab C
 B7, 2322, fingers=1211, notes=A D# F# B
-Baug, 0332, fingers=0221, notes=F## D# F## B
 Bb7, 1211, fingers=1211, notes=Ab D F Bb
-Bbdim, 3404, fingers=1202, notes=Bb Fb Fb Db
-Bbm7, 1111, fingers=1111, notes=Ab Db F Bb
 Bbmaj7, 3210, fingers=3210, notes=Bb D F A
 Bbsus2, 3013, fingers=3013, notes=Bb C F C
-Bm7, 2222, fingers=1111, notes=A D F# B
 C#7, 1112, fingers=1112, notes=G# C# F B
-C#aug, 2110, fingers=2110, notes=G## C# F G##
-C#m7, 1102, fingers=1102, notes=G# C# E B
-Caug, 1003, fingers=1003, notes=G# C E C
 Cdim, 8089, fingers=1012, notes=Eb C C Gb, starting_fret=8
-Csus2, 0233, fingers=0122, notes=G D G C
-Csus4, 0013, fingers=0013, notes=G C F C
 D7, 2223, fingers=1112, notes=A D F# C
-E7, 1202, fingers=1202, notes=G# D E B
-Eaug, 1003, fingers=1003, notes=G# B# E B#
 Eb7, 3334, fingers=1112, notes=Bb Eb G Db
-Ebaug, 0332, fingers=0221, notes=G Eb G B
-Ebdim, 2320, fingers=1210, notes=Bbb Eb Gb Bbb
 Ebm7, 6666, fingers=1111, notes=Db Gb Bb Eb, starting_fret=6
 Edim, 0401, fingers=0401, notes=G E E Bb
 Emaj7, 1302, fingers=1302, notes=G# D# E B
-F#m, 2120, fingers=2120, notes=A C# F# A
-Faug, 2110, fingers=2110, notes=A C# F A
 Fm, 1013, fingers=1013, notes=Ab C F C
-Fsus2, 0013, fingers=0013, notes=G C F C
 Fsus4, 3013, fingers=3013, notes=Bb C F C
-Gaug, 0332, fingers=0221, notes=G D# G B
 Gdim, 0131, fingers=0131, notes=G Db G Bb
 Gm, 0231, fingers=0231, notes=G D G Bb
-Gm7, 0211, fingers=0211, notes=G D F Bb
-Gsus4, 0233, fingers=0122, notes=G D G C
 ---
-= Very Hard Ukulele Chord Voicings
+= Very Hard
 Ab7, 1323, fingers=1323, notes=Ab Eb Gb C
 Abdim, 4242, fingers=3131, notes=Cb Ebb Ab Cb
 Abm, 4342, fingers=3231, notes=B Eb Ab B
