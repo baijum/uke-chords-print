@@ -62,9 +62,17 @@ FRETS_DISPLAY_SIZE = 14
 INVERSION_SIZE = 14
 
 
-def draw_chord_diagram(voicing: ChordVoicing) -> Drawing:
+def draw_chord_diagram(
+    voicing: ChordVoicing,
+    string_labels: tuple[str, ...] | None = None,
+) -> Drawing:
     """
     Create a ReportLab Drawing for a single chord diagram.
+
+    Args:
+        voicing: The chord voicing to render.
+        string_labels: Optional tuple of string labels (e.g., ("D", "G", "B", "E")
+            for baritone). If provided, renders labels above the nut/fretboard.
 
     Returns a Drawing object of size DIAGRAM_WIDTH x DIAGRAM_HEIGHT.
     """
@@ -94,10 +102,16 @@ def draw_chord_diagram(voicing: ChordVoicing) -> Drawing:
             fb_left, fb_top, fb_left + FRETBOARD_WIDTH, fb_top,
             strokeColor=FRET_COLOR, strokeWidth=0.8
         ))
-        # Draw fret number label above the fretboard, left-aligned
+        # Find first string without an open/mute marker for fret label placement
+        fret_label_x = fb_left - 6 * mm  # default: to the left of fretboard
+        for i, ch in enumerate(voicing.frets[:NUM_STRINGS]):
+            if ch not in ("0", "X", "x"):
+                fret_label_x = fb_left + i * STRING_SPACING
+                break
+        # Draw fret number label above the fretboard
         fret_label = f"{starting_fret}fr"
         d.add(String(
-            fb_left, fb_top + 2 * mm,
+            fret_label_x, fb_top + 2 * mm,
             fret_label,
             fontSize=FRET_NUM_SIZE,
             fillColor=LABEL_COLOR,
@@ -217,13 +231,16 @@ def draw_chord_diagram(voicing: ChordVoicing) -> Drawing:
                     fontName="Helvetica-Bold",
                 ))
 
-    # --- Frets string below notes ---
+    # --- Frets string below notes (with tuning indicator for non-standard tunings) ---
     frets_display = " - ".join(frets_str)
+    if string_labels:
+        tuning_str = "-".join(string_labels)
+        frets_display = f"{frets_display}  ({tuning_str})"
     d.add(String(
         fb_left + FRETBOARD_WIDTH / 2,
         fb_bottom - 11 * mm,
         frets_display,
-        fontSize=FRETS_DISPLAY_SIZE,
+        fontSize=FRETS_DISPLAY_SIZE if not string_labels else 11,
         fillColor=HexColor("#333333"),
         textAnchor="middle",
         fontName="Courier-Bold",
