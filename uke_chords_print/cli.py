@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from .chord_db import list_all_chords, lookup_chord, CHORD_DB
+from .chord_db import list_all_chords, lookup_chord
 from .parser import parse_cli_args, parse_file, ChordVoicing, PAGE_BREAK, is_heading
 from .pdf_generator import generate_pdf
 
@@ -97,7 +97,7 @@ def print_chord_list():
     chords = list_all_chords()
     # Group by type
     for name in chords:
-        voicings = CHORD_DB[name]
+        voicings = lookup_chord(name) or []
         count = len(voicings)
         frets_list = ", ".join(v["frets"] for v in voicings)
         suffix = "voicing" if count == 1 else "voicings"
