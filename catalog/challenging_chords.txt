@@ -8,74 +8,74 @@
 = Hard
 Aaug, 2110, fingers=2110, notes=A C# E# A
 Abaug, 1003, fingers=1003, notes=Ab C E C
-Abmaj7, 0343, fingers=0132, notes=G Eb Ab C
-B7, 2322, fingers=1322, notes=A D# F# B
+Abmaj7, 0343, fingers=0121, notes=G Eb Ab C
+B7, 2322, fingers=1211, notes=A D# F# B
 Baug, 0332, fingers=0221, notes=F## D# F## B
-Bb7, 1211, fingers=1322, notes=Ab D F Bb
-Bbdim, 3404, fingers=1203, notes=Bb Fb Fb Db
+Bb7, 1211, fingers=1211, notes=Ab D F Bb
+Bbdim, 3404, fingers=1202, notes=Bb Fb Fb Db
 Bbm7, 1111, fingers=1111, notes=Ab Db F Bb
 Bbmaj7, 3210, fingers=3210, notes=Bb D F A
-Bbsus2, 3013, fingers=3014, notes=Bb C F C
+Bbsus2, 3013, fingers=3013, notes=Bb C F C
 Bm7, 2222, fingers=1111, notes=A D F# B
 C#7, 1112, fingers=1112, notes=G# C# F B
 C#aug, 2110, fingers=2110, notes=G## C# F G##
 C#m7, 1102, fingers=1102, notes=G# C# E B
 Caug, 1003, fingers=1003, notes=G# C E C
-Cdim, 8089, fingers=1023, notes=Eb C C Gb, starting_fret=8
+Cdim, 8089, fingers=1012, notes=Eb C C Gb, starting_fret=8
 Csus2, 0233, fingers=0122, notes=G D G C
 Csus4, 0013, fingers=0013, notes=G C F C
 D7, 2223, fingers=1112, notes=A D F# C
-E7, 1202, fingers=1203, notes=G# D E B
+E7, 1202, fingers=1202, notes=G# D E B
 Eaug, 1003, fingers=1003, notes=G# B# E B#
 Eb7, 3334, fingers=1112, notes=Bb Eb G Db
 Ebaug, 0332, fingers=0221, notes=G Eb G B
-Ebdim, 2320, fingers=1320, notes=Bbb Eb Gb Bbb
+Ebdim, 2320, fingers=1210, notes=Bbb Eb Gb Bbb
 Ebm7, 6666, fingers=1111, notes=Db Gb Bb Eb, starting_fret=6
 Edim, 0401, fingers=0401, notes=G E E Bb
 Emaj7, 1302, fingers=1302, notes=G# D# E B
-F#m, 2120, fingers=2130, notes=A C# F# A
+F#m, 2120, fingers=2120, notes=A C# F# A
 Faug, 2110, fingers=2110, notes=A C# F A
-Fm, 1013, fingers=1023, notes=Ab C F C
+Fm, 1013, fingers=1013, notes=Ab C F C
 Fsus2, 0013, fingers=0013, notes=G C F C
-Fsus4, 3013, fingers=3014, notes=Bb C F C
+Fsus4, 3013, fingers=3013, notes=Bb C F C
 Gaug, 0332, fingers=0221, notes=G D# G B
-Gdim, 0131, fingers=0132, notes=G Db G Bb
+Gdim, 0131, fingers=0131, notes=G Db G Bb
 Gm, 0231, fingers=0231, notes=G D G Bb
 Gm7, 0211, fingers=0211, notes=G D F Bb
 Gsus4, 0233, fingers=0122, notes=G D G C
 ---
-= Very Hard
-Ab7, 1323, fingers=1324, notes=Ab Eb Gb C
-Abdim, 4242, fingers=3142, notes=Cb Ebb Ab Cb
-Abm, 4342, fingers=3241, notes=B Eb Ab B
+= Very Hard Ukulele Chord Voicings
+Ab7, 1323, fingers=1323, notes=Ab Eb Gb C
+Abdim, 4242, fingers=3131, notes=Cb Ebb Ab Cb
+Abm, 4342, fingers=3231, notes=B Eb Ab B
 Abm7, 1322, fingers=1322, notes=Ab Eb Gb B
-Absus2, 1341, fingers=1342, notes=Ab Eb Ab Bb
+Absus2, 1341, fingers=1341, notes=Ab Eb Ab Bb
 Absus4, 1344, fingers=1344, notes=Ab Eb Ab Db
 Bbaug, 3221, fingers=3221, notes=Bb D F# Bb
 Bbm, 3111, fingers=3111, notes=Bb Db F Bb
 Bbsus4, 3311, fingers=3311, notes=Bb Eb F Bb
-Bdim, 4212, fingers=4213, notes=B D F B
+Bdim, 4212, fingers=4212, notes=B D F B
 Bmaj7, 3322, fingers=2211, notes=A# D# F# B
-Bsus2, 4124, fingers=4125, notes=B C# F# C#
+Bsus2, 4124, fingers=4124, notes=B C# F# C#
 Bsus4, 4607, fingers=1304, notes=B F# E E, starting_fret=4
 C#, 1114, fingers=1114, notes=G# C# F C#
-C#m, 1404, fingers=1405, notes=G# E E C#
-C#maj7, 1014, fingers=1024, notes=G# C F C#
+C#m, 1404, fingers=1404, notes=G# E E C#
+C#maj7, 1014, fingers=1014, notes=G# C F C#
 C#sus2, 1344, fingers=1344, notes=G# D# G# C#
 C#sus4, 1124, fingers=1124, notes=G# C# F# C#
 Daug, 3221, fingers=3221, notes=A# D F# A#
-Ddim, 7545, fingers=4213, notes=D F Ab D, starting_fret=4
+Ddim, 7545, fingers=4212, notes=D F Ab D, starting_fret=4
 Dmaj7, 2224, fingers=1113, notes=A D F# C#
 Ebm, 3321, fingers=3321, notes=Bb Eb Gb Bb
 Ebmaj7, 0365, fingers=0143, notes=G Eb Bb D, starting_fret=3
 Ebsus2, 3311, fingers=3311, notes=Bb Eb F Bb
-Ebsus4, 1341, fingers=1342, notes=Ab Eb Ab Bb
+Ebsus4, 1341, fingers=1341, notes=Ab Eb Ab Bb
 Esus2, 4607, fingers=1304, notes=B F# E E, starting_fret=4
-F#, 3121, fingers=4132, notes=A# C# F# A#
+F#, 3121, fingers=3121, notes=A# C# F# A#
 F#7, 6667, fingers=1112, notes=C# F# A# E, starting_fret=6
 F#aug, 3221, fingers=3221, notes=A# C## F# A#
 F#maj7, 3524, fingers=2413, notes=A# F F# C#, starting_fret=2
 F#sus2, 1124, fingers=1124, notes=G# C# F# C#
-F#sus4, 4124, fingers=4125, notes=B C# F# C#
-Fdim, 4542, fingers=3541, notes=Cb F Ab Cb, starting_fret=2
-Fm7, 1313, fingers=1324, notes=Ab Eb F C
+F#sus4, 4124, fingers=4124, notes=B C# F# C#
+Fdim, 4542, fingers=3431, notes=Cb F Ab Cb, starting_fret=2
+Fm7, 1313, fingers=1313, notes=Ab Eb F C

@@ -45,10 +45,10 @@ def _note_to_pc(name: str) -> int:
 def _assign_fingers(frets: tuple[int, ...]) -> str:
     """Assign finger numbers to a fret combination.
 
-    Uses a stretch-aware heuristic:
+    Uses a stretch-aware heuristic based on standard ukulele technique:
     - Open strings = 0
-    - Consecutive strings at the same fret = barre (one finger)
-    - Finger number based on offset from lowest fret
+    - All strings at the same fret share one finger (barre / flat finger)
+    - Finger number based on offset from lowest fret (one-finger-per-fret)
     """
     if all(f == 0 for f in frets):
         return "0" * len(frets)
@@ -63,25 +63,19 @@ def _assign_fingers(frets: tuple[int, ...]) -> str:
         if f > 0:
             fret_groups.setdefault(f, []).append(i)
 
-    # Build finger units: (fret_value, [consecutive string run])
+    # Build finger units: one unit per unique fret value.
+    # On ukulele (4 strings), a single finger can press non-adjacent
+    # strings at the same fret, so all strings share one finger.
     finger_units: list[tuple[int, list[int]]] = []
     for fret_val in sorted(fret_groups):
-        strings = sorted(fret_groups[fret_val])
-        runs: list[list[int]] = [[strings[0]]]
-        for s in strings[1:]:
-            if s == runs[-1][-1] + 1:
-                runs[-1].append(s)
-            else:
-                runs.append([s])
-        for run in runs:
-            finger_units.append((fret_val, run))
+        finger_units.append((fret_val, fret_groups[fret_val]))
 
     # Assign fingers: stretch-aware with sequential guarantee
     next_finger = 1
-    for fret_val, run in finger_units:
+    for fret_val, string_indices in finger_units:
         target = fret_val - min_fret + 1
         fn = max(min(target, 4), next_finger)
-        for s in run:
+        for s in string_indices:
             fingers[s] = fn
         next_finger = fn + 1
 
