@@ -6,10 +6,12 @@
 C
 D
 E, 4447, fingers=1114, notes=B E Ab E, starting_fret=4
+E, 1402, fingers=1302, notes=Ab E E B
 F
 G
 A
 B, 4322, fingers=3211, notes=A D# F# B
+B, 4322, fingers=4321, notes=A D# F# B
 Ab, 5046, fingers=2013, notes=C C Ab Eb, starting_fret=4
 Bb
 Eb, 0331, fingers=0231, notes=G Eb G Bb
