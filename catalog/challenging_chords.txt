@@ -4,6 +4,7 @@
 # algorithm, organized by difficulty tier.
 # Note: Some challenging chords (E, B, Bb, Eb, etc.) are listed in
 # popular_chords.txt instead, as they are widely used despite being hard.
+# Chords commented out were found easier than expected in practice.
 
 = Hard
 B7, 2322, fingers=1211, notes=A D# F# B
@@ -15,12 +16,12 @@ Cdim, 8089, fingers=1012, notes=Eb C C Gb, starting_fret=8
 D7, 2223, fingers=1112, notes=A D F# C
 Eb7, 3334, fingers=1112, notes=Bb Eb G Db
 Ebm7, 6666, fingers=1111, notes=Db Gb Bb Eb, starting_fret=6
-Edim, 0401, fingers=0401, notes=G E E Bb
+# Edim, 0401, fingers=0401, notes=G E E Bb
 Emaj7, 1302, fingers=1302, notes=G# D# E B
-Fm, 1013, fingers=1013, notes=Ab C F C
+# Fm, 1013, fingers=1013, notes=Ab C F C
 Fsus4, 3013, fingers=3013, notes=Bb C F C
-Gdim, 0131, fingers=0131, notes=G Db G Bb
-Gm, 0231, fingers=0231, notes=G D G Bb
+# Gdim, 0131, fingers=0131, notes=G Db G Bb
+# Gm, 0231, fingers=0231, notes=G D G Bb
 ---
 = Very Hard
 Ab7, 1323, fingers=1323, notes=Ab Eb Gb C
