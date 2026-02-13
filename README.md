@@ -1,29 +1,30 @@
 # Uke Chords Print
 
-A Python CLI tool that generates **printable PDF pages** of ukulele chord diagrams. Perfect for beginners who want a quick-reference sheet of finger positions to keep on a music stand while practicing -- a different kind of sight reading!
+**Generate printable PDF chord diagrams for ukulele** -- perfect for keeping on a music stand while practicing.
 
-Chords can be specified by name (looked up from a built-in database of 78 chords / 92 voicings) or by explicit 4-digit voicing notation.
+Chords are generated algorithmically from music theory using [pychord](https://github.com/yuma-m/pychord), so any chord name works out of the box -- 108 standard chords with 3 voicings each, ranked by a research-backed playability score.
 
-## Requirements
+---
 
-- Python 3.9+
-- [ReportLab](https://pypi.org/project/reportlab/) (PDF generation)
+## Features
 
-## Installation
+- **Any chord, instantly** -- type a chord name and get a diagram. No static database to maintain.
+- **Smart voicing selection** -- voicings are ranked by a 7-factor difficulty score based on the [ISMIR 2023 playability rubric](https://ismir2023program.ismir.net/poster_225.html) and the Radicioni biomechanical model.
+- **Print-ready PDFs** -- clean black-and-white diagrams sized for A4 or US Letter, readable from a music stand.
+- **Catalog included** -- ready-made chord sheets for popular progressions, hit songs, classical pieces, and world music.
+- **Flexible input** -- pass chord names on the command line, use explicit voicing notation, or load from text files.
+- **Customizable layout** -- adjust columns, rows, paper size, and titles.
+
+## Quick Start
 
 ```bash
 git clone https://github.com/<your-username>/uke-chords-print.git
 cd uke-chords-print
 pip install -r requirements.txt
-```
 
-## Quick Start
-
-```bash
 # Generate a PDF with common beginner chords
 python3 -m uke_chords_print C Am G7 F -t "Beginner Chords"
-
-# Output: chords.pdf (16 chord diagrams per A4 page)
+# -> chords.pdf (16 chord diagrams per A4 page)
 ```
 
 ## Usage
@@ -32,50 +33,53 @@ python3 -m uke_chords_print C Am G7 F -t "Beginner Chords"
 python3 -m uke_chords_print [CHORDS...] [OPTIONS]
 ```
 
-### Positional Arguments
-
-| Argument | Description |
-|----------|-------------|
-| `CHORDS` | One or more chord names or `name:voicing` pairs |
-
-### Options
-
 | Option | Default | Description |
 |--------|---------|-------------|
+| `CHORDS` | | One or more chord names or `name:voicing` pairs |
 | `--file`, `-f` | | Read chords from a text file |
 | `--output`, `-o` | `chords.pdf` | Output PDF file path |
 | `--title`, `-t` | *(none)* | Title printed at the top of the first page |
 | `--paper` | `a4` | Paper size: `a4` or `letter` |
-| `--cols` | `4` | Number of columns per page |
-| `--rows` | `4` | Number of rows per page |
-| `--single` | | Show only the primary voicing for each chord (useful for progressions/songs) |
-| `--show-root` | | Show 'Root' inversion label (hidden by default; non-root inversions always show) |
-| `--list` | | List all chords in the built-in database and exit |
-| `--help`, `-h` | | Show help message and exit |
+| `--cols` | `4` | Columns per page |
+| `--rows` | `4` | Rows per page |
+| `--single` | | Show only the primary (easiest) voicing per chord |
+| `--show-root` | | Show 'Root' inversion label (hidden by default) |
+| `--list` | | List all 108 standard chords and exit |
+
+### Examples
+
+```bash
+# All C chord voicings
+python3 -m uke_chords_print C Cm C7 Cmaj7 Cm7 Cdim Caug Csus2 Csus4 \
+  -t "C Family" -o c_chords.pdf
+
+# Beginner essentials on US Letter paper
+python3 -m uke_chords_print C Am F G G7 D Em A7 \
+  --paper letter -t "Starter Chords"
+
+# From a text file with custom layout
+python3 -m uke_chords_print --file catalog/popular_chords.txt \
+  --cols 3 --rows 3 -t "Popular Chords"
+
+# Mix database lookup and explicit voicings
+python3 -m uke_chords_print Am G7 "F:2010:fingers=2_1_" -o mixed.pdf
+```
 
 ## Input Methods
 
-There are three ways to specify which chords to print. They can be mixed freely.
-
-### 1. Chord Names (database lookup)
-
-Pass chord names directly as arguments. All voicings for that chord are included.
+### 1. Chord names
 
 ```bash
 python3 -m uke_chords_print C Am G7 F
 ```
 
-### 2. Explicit Voicing Notation
-
-Use `name:frets` or `name:frets:fingers=XXXX` to specify exact finger positions.
+### 2. Explicit voicing notation
 
 ```bash
 python3 -m uke_chords_print "C:0003" "F:2010:fingers=2_1_"
 ```
 
-### 3. Text File
-
-Create a text file with one chord per line and pass it with `--file`.
+### 3. Text files
 
 ```bash
 python3 -m uke_chords_print --file my_chords.txt -t "Practice Sheet"
@@ -83,155 +87,125 @@ python3 -m uke_chords_print --file my_chords.txt -t "Practice Sheet"
 
 **File format:**
 
-```
-# Lines starting with # are comments
-# Blank lines are ignored
+```text
+# Comments start with #
 
-# Chord name only -> all voicings from database
-C
+= Key of C                    # Section heading
+C                              # Chord name -> best voicings from generator
 Am
+F, 2010, fingers=2010          # Explicit voicing with fingering
+G
 
-# Chord name with explicit voicing
-C, 0003
-F, 2010, fingers=2_1_
-
-# Higher position chord with starting fret
-Dm7, 7988, fingers=1423, starting_fret=6
+---                            # Page break
 
 = Key of G
-# A line starting with = is a section heading rendered in the PDF.
-
 G
 D
 Em
-
----
-
-# A line containing only --- forces a new page in the PDF.
-# Useful for separating sections (e.g., different keys).
 ```
-
-**Supported fields per line (comma-separated):**
 
 | Field | Required | Example | Description |
 |-------|----------|---------|-------------|
 | Chord name | Yes | `C`, `Am7` | Name shown above the diagram |
 | Frets | No | `0003` | 4-digit string (G-C-E-A fret numbers) |
-| `fingers=` | No | `fingers=0003` | Which finger to use (1-4, `_` or `0` = open) |
-| `starting_fret=` | No | `starting_fret=5` | First fret shown on diagram (for higher positions) |
+| `fingers=` | No | `fingers=0003` | Finger to use (1-4, `0` = open) |
 | `notes=` | No | `notes=G C E C` | Note names shown below the fretboard |
-| `inversion=` | No | `inversion=Root` | Inversion label (Root, 1st Inv, 2nd Inv) |
+| `starting_fret=` | No | `starting_fret=5` | First fret shown on diagram |
+| `inversion=` | No | `inversion=Root` | Inversion label |
 
-**Special directives (standalone lines):**
+See [`example_chords.txt`](example_chords.txt) for a complete sample.
 
-| Syntax | Description |
-|--------|-------------|
-| `= Heading text` | Section heading rendered as bold text in the PDF (occupies one grid cell) |
-| `---` | Force a page break -- subsequent chords start on a new page |
-| `# ...` | Comment (ignored) |
+## Chord Database
 
-An example input file is included: [`example_chords.txt`](example_chords.txt).
+The voicing generator supports **108 standard chords** (12 roots x 9 qualities), each with up to 3 voicings ranked by playability:
 
-## Voicing Notation
+| Type | Example | All 12 roots |
+|------|---------|--------------|
+| **Major** | C, D, G | C C# D Eb E F F# G Ab A Bb B |
+| **Minor** | Am, Dm, Em | Cm C#m Dm Ebm Em Fm F#m Gm Abm Am Bbm Bm |
+| **Dominant 7th** | G7, C7 | C7 C#7 D7 Eb7 E7 F7 F#7 G7 Ab7 A7 Bb7 B7 |
+| **Major 7th** | Cmaj7 | Cmaj7 ... Bmaj7 |
+| **Minor 7th** | Am7, Dm7 | Cm7 ... Bm7 |
+| **Diminished** | Cdim | Cdim ... Bdim |
+| **Augmented** | Caug | Caug ... Baug |
+| **Suspended 2nd** | Dsus2 | Csus2 ... Bsus2 |
+| **Suspended 4th** | Gsus4 | Csus4 ... Bsus4 |
 
-Ukulele voicings use a **4-character string** where each character represents the fret number for a string in standard tuning order (**G-C-E-A**):
-
-| Character | Meaning |
-|-----------|---------|
-| `0` | Open string (unfretted) |
-| `1`-`9` | Fret number to press |
-| `X` | Muted string (don't play) |
-
-**Examples:**
-
-| Voicing | Chord | Explanation |
-|---------|-------|-------------|
-| `0003` | C major | G open, C open, E open, A at 3rd fret |
-| `2010` | F major | G at 2nd fret, C open, E at 1st fret, A open |
-| `0232` | G major | G open, C at 2nd fret, E at 3rd fret, A at 2nd fret |
-| `2000` | A minor | G at 2nd fret, C open, E open, A open |
-
-## What Each Diagram Shows
-
-Each chord diagram on the PDF includes:
-
-- **Chord name** in bold at the top (e.g., "C", "Am7")
-- **Fretboard grid** with 4 vertical string lines (G-C-E-A) and 4 horizontal fret lines
-- **Nut** (thick top line) for open-position chords, or a **fret indicator** (e.g., "5fr") for higher positions
-- **Filled dots** at fretted positions with **fingering numbers** inside (white text)
-- **Open circles** above the nut for open strings
-- **X marks** above the nut for muted strings
-- **Note names** below the fretboard (e.g., G C E C)
-- **Fret numbers** in dash-separated format (e.g., 0 - 0 - 0 - 3)
-- **Inversion label** at the bottom (Root, 1st Inv, etc.)
-
-## Built-in Chord Database
-
-The database includes **78 chords with 92 voicings** across all common types:
-
-| Type | Count | Chords |
-|------|-------|--------|
-| **Major** | 14 | A, Ab, B, Bb, C, C#, D, Db, E, Eb, F, F#, G, Gb |
-| **Minor** | 12 | Am, Abm, Bm, Bbm, Cm, C#m, Dm, Ebm, Em, Fm, F#m, Gm |
-| **Dominant 7th** | 10 | A7, Ab7, B7, Bb7, C7, D7, E7, Eb7, F7, G7 |
-| **Major 7th** | 8 | Amaj7, Bbmaj7, Bmaj7, Cmaj7, Dmaj7, Emaj7, Fmaj7, Gmaj7 |
-| **Minor 7th** | 8 | Am7, Bbm7, Bm7, Cm7, Dm7, Em7, Fm7, Gm7 |
-| **Diminished** | 7 | Adim, Bdim, Cdim, Ddim, Edim, Fdim, Gdim |
-| **Augmented** | 7 | Aaug, Bbaug, Caug, Daug, Eaug, Faug, Gaug |
-| **Suspended 2nd** | 6 | Asus2, Csus2, Dsus2, Esus2, Fsus2, Gsus2 |
-| **Suspended 4th** | 6 | Asus4, Csus4, Dsus4, Esus4, Fsus4, Gsus4 |
-
-Many chords include multiple voicings (root position + inversions).
-
-To see the full list with fret positions:
+Enharmonic aliases are supported: `Db` = `C#`, `Gb` = `F#`, `Ab` = `G#`, `Bb` = `A#`, etc.
 
 ```bash
-python3 -m uke_chords_print --list
+python3 -m uke_chords_print --list   # See all chords with voicings
 ```
 
-**Enharmonic aliases** are supported: `Db` = `C#`, `Eb` = `D#`, `Gb` = `F#`, `Ab` = `G#`, `Bb` = `A#` (and their minor variants).
+## Difficulty Scoring
 
-## PDF Layout
+Every voicing is scored for playability using 7 factors derived from the [ISMIR 2023 playability rubric](https://ismir2023program.ismir.net/poster_225.html) and the [Radicioni biomechanical fingering model](https://www.di.unito.it/~radicion/papers/radicioni05guitar.pdf):
 
-- **Default grid:** 4 columns x 4 rows = 16 diagrams per page
-- **Default paper:** A4 (210mm x 297mm). Use `--paper letter` for US Letter.
-- **Print-friendly:** Black and white, clean lines, large text readable from a music stand
-- **Multi-page:** Automatically spans multiple pages when needed, with page numbers at the bottom
-- **Customizable:** Adjust grid with `--cols` and `--rows`
+| Factor | What it measures |
+|--------|-----------------|
+| Fret span | Distance between lowest and highest fretted note |
+| Barre complexity | Sustained pressure across consecutive strings |
+| Finger count | Number of fretted strings |
+| Fret position | Higher frets = tighter spacing |
+| Open strings | More open strings = easier |
+| Finger independence | Large gaps between non-barre fingers |
+| Compact shape | Clustered frets are familiar and easier |
 
-## Examples
+Each voicing gets a label: **easy**, **moderate**, **hard**, or **very hard**. The generator returns voicings sorted easiest-first, so the primary voicing (`--single`) is always the most accessible.
 
-```bash
-# All C chord voicings (major, minor, 7th, maj7, dim, aug, sus2, sus4)
-python3 -m uke_chords_print C Cm C7 Cmaj7 Cm7 Cdim Caug Csus2 Csus4 \
-  -t "C Family" -o c_chords.pdf
+## Chord Diagram
 
-# Beginner essentials on US Letter paper
-python3 -m uke_chords_print C Am F G G7 D Em A7 \
-  --paper letter -t "Starter Chords" -o starter.pdf
+Each diagram on the PDF includes:
 
-# From a practice file with custom layout
-python3 -m uke_chords_print --file example_chords.txt \
-  --cols 3 --rows 3 -t "Weekly Practice"
-
-# Mix database lookup and explicit voicings
-python3 -m uke_chords_print Am G7 "F:2010:fingers=2_1_" -o mixed.pdf
-```
+- **Chord name** in bold at the top
+- **Fretboard grid** with 4 strings (G-C-E-A) and 4 frets
+- **Nut** (thick top line) for open position, or **fret indicator** for higher positions
+- **Filled dots** with **fingering numbers** inside
+- **Open circles** for open strings, **X marks** for muted strings
+- **Note names** below the fretboard
+- **Fret numbers** and **inversion label** at the bottom
 
 ## Chord Sheet Catalog
 
-A ready-to-use collection of chord sheet files is included in the [`catalog/`](catalog/) directory, organized by category:
+A ready-to-use collection of chord sheets lives in [`catalog/`](catalog/):
 
-- **Chord Progressions** -- Pop (I-V-vi-IV), 50s Doo-Wop, 12-Bar Blues, Classic Rock, Jazz
-- **Hit Songs** -- Beginner hits, pop classics, campfire singalongs
-- **Classical Music** -- Ode to Joy, Pachelbel Canon, Amazing Grace, Greensleeves
-- **World Music** -- Latin/Bossa Nova, Hawaiian/Reggae, folk traditions from 10+ countries
+| Category | Files |
+|----------|-------|
+| **Reference** | [Popular chords](catalog/popular_chords.txt), [All 108 chords](catalog/all_chords.txt), [Challenging chords](catalog/challenging_chords.txt) |
+| **Progressions** | [Pop anthems](catalog/progressions/pop_anthems.txt), [12-bar blues](catalog/progressions/12_bar_blues.txt), [Jazz essentials](catalog/progressions/jazz_essentials.txt), [Classic rock](catalog/progressions/classic_rock.txt), [50s doo-wop](catalog/progressions/50s_doo_wop.txt) |
+| **Songs** | [Beginner hits](catalog/songs/beginner_hits.txt), [Pop classics](catalog/songs/pop_classics.txt), [Campfire songs](catalog/songs/campfire_songs.txt) |
+| **Classical** | [Ode to Joy, Pachelbel Canon, Amazing Grace, Greensleeves...](catalog/classical/classical_pieces.txt) |
+| **World Music** | [Latin/Bossa Nova](catalog/world/latin_bossa.txt), [Hawaiian/Reggae](catalog/world/island_hawaiian.txt), [Folk traditions](catalog/world/folk_traditions.txt) |
 
 ```bash
-python3 -m uke_chords_print --file catalog/songs/beginner_hits.txt -t "Beginner Hits"
+python3 -m uke_chords_print --file catalog/songs/beginner_hits.txt \
+  --single -t "Beginner Hits"
 ```
 
 See the full list in the [Catalog README](catalog/README.md).
+
+## Voicing Notation
+
+Voicings use a **4-character string** for standard tuning (**G-C-E-A**):
+
+| Character | Meaning |
+|-----------|---------|
+| `0` | Open string |
+| `1`-`9` | Fret number |
+| `X` | Muted string |
+
+| Voicing | Chord | Strings |
+|---------|-------|---------|
+| `0003` | C | G open, C open, E open, A at 3rd fret |
+| `2010` | F | G at 2nd, C open, E at 1st, A open |
+| `0232` | G | G open, C at 2nd, E at 3rd, A at 2nd |
+| `2000` | Am | G at 2nd, C open, E open, A open |
+
+## Requirements
+
+- Python 3.9+
+- [ReportLab](https://pypi.org/project/reportlab/) -- PDF generation
+- [pychord](https://pypi.org/project/pychord/) -- music theory (chord-to-notes resolution)
 
 ## Project Structure
 
@@ -241,19 +215,29 @@ uke-chords-print/
     __init__.py          # Package metadata
     __main__.py          # python -m entry point
     cli.py               # Argument parsing and CLI logic
-    chord_db.py          # Built-in chord database (78 chords)
+    chord_db.py          # Chord lookup (wraps voicing generator)
+    voicing_gen.py       # Algorithmic voicing generator + difficulty scoring
     parser.py            # Input parsing (CLI args + text files)
     diagram.py           # Chord diagram renderer (ReportLab)
     pdf_generator.py     # Page layout and PDF output
-  catalog/               # Pre-made chord sheet files (see catalog/README.md)
+  catalog/               # Pre-made chord sheet files
     progressions/        # Named chord progressions
     songs/               # Hit songs by difficulty
     classical/           # Classical music
     world/               # World music and folk traditions
   example_chords.txt     # Sample input file
   requirements.txt       # Python dependencies
-  README.md
 ```
+
+## How the Voicing Generator Works
+
+The generator uses [pychord](https://github.com/yuma-m/pychord) for music theory and a fretboard search for playable shapes:
+
+1. **Resolve notes** -- `pychord.Chord("Am7").components()` returns `['A', 'C', 'E', 'G']`
+2. **Search fretboard** -- iterate valid fret combinations on all 4 strings (frets 0-9)
+3. **Filter** -- all notes must be chord tones, all chord tones must be present, fret span <= 3
+4. **Score** -- rank by 7-factor difficulty heuristic
+5. **Return** -- top 3 voicings, easiest first
 
 ## License
 
