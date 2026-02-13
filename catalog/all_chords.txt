@@ -1,19 +1,17 @@
-# All Chords -- Complete Database Reference
-# ==========================================
-# Every unique chord in the built-in database (78 chords),
-# organized by type. Use with --single to show one voicing
-# each, or without it to show all voicings/inversions.
+# All Chords -- Complete Reference
+# =================================
+# Every standard chord supported by the voicing generator (108 chords),
+# organized by type. Use with --single to show one voicing each, or
+# without it to show all voicings/inversions.
 
 = Major
 C
 C#
-Db
 D
 Eb
 E
 F
 F#
-Gb
 G
 Ab
 A
@@ -36,66 +34,101 @@ Bm
 
 = Dominant 7th
 C7
+C#7
 D7
+Eb7
 E7
 F7
+F#7
 G7
-A7
-B7
-Bb7
-Eb7
 Ab7
+A7
+Bb7
+B7
+---
 
 = Major 7th
 Cmaj7
+C#maj7
 Dmaj7
+Ebmaj7
 Emaj7
 Fmaj7
+F#maj7
 Gmaj7
+Abmaj7
 Amaj7
 Bbmaj7
 Bmaj7
 
 = Minor 7th
 Cm7
+C#m7
 Dm7
+Ebm7
 Em7
 Fm7
+F#m7
 Gm7
+Abm7
 Am7
-Bm7
 Bbm7
+Bm7
+---
 
 = Diminished
 Cdim
+C#dim
 Ddim
+Ebdim
 Edim
 Fdim
+F#dim
 Gdim
+Abdim
 Adim
+Bbdim
 Bdim
 
 = Augmented
 Caug
+C#aug
 Daug
+Ebaug
 Eaug
 Faug
+F#aug
 Gaug
+Abaug
 Aaug
 Bbaug
+Baug
+---
 
 = Suspended 2nd
 Csus2
+C#sus2
 Dsus2
+Ebsus2
 Esus2
 Fsus2
+F#sus2
 Gsus2
+Absus2
 Asus2
+Bbsus2
+Bsus2
 
 = Suspended 4th
 Csus4
+C#sus4
 Dsus4
+Ebsus4
 Esus4
 Fsus4
+F#sus4
 Gsus4
+Absus4
 Asus4
+Bbsus4
+Bsus4
