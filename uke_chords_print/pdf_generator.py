@@ -42,6 +42,7 @@ def generate_pdf(
     cols: int = 4,
     rows: int = 5,
     show_root: bool = False,
+    no_fingers: bool = False,
 ) -> str:
     """
     Generate a PDF with chord diagrams laid out in a grid.
@@ -170,6 +171,10 @@ def generate_pdf(
         # Hide "Root" inversion label unless --show-root is set
         if not show_root and voicing.inversion == "Root":
             voicing.inversion = ""
+
+        # Hide finger numbers inside dots when --no-fingers is set
+        if no_fingers:
+            voicing.fingers = ""
 
         drawing = draw_chord_diagram(voicing)
 

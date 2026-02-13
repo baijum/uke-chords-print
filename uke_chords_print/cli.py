@@ -85,6 +85,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Show only the primary voicing for each chord (default: show all voicings)",
     )
+    parser.add_argument(
+        "--no-fingers",
+        action="store_true",
+        dest="no_fingers",
+        help="Hide finger numbers inside the fret dots",
+    )
 
     return parser
 
@@ -150,6 +156,7 @@ def main(argv: list[str] | None = None):
             cols=args.cols,
             rows=args.rows,
             show_root=args.show_root,
+            no_fingers=args.no_fingers,
         )
         chord_count = sum(
             1 for v in voicings if v is not PAGE_BREAK and not is_heading(v)

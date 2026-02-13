@@ -44,6 +44,7 @@ python3 -m uke_chords_print [CHORDS...] [OPTIONS]
 | `--rows` | `4` | Rows per page |
 | `--single` | | Show only the primary (easiest) voicing per chord |
 | `--show-root` | | Show 'Root' inversion label (hidden by default) |
+| `--no-fingers` | | Hide finger numbers inside the fret dots |
 | `--list` | | List all 108 standard chords and exit |
 
 ### Examples
