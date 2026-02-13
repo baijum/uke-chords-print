@@ -172,7 +172,7 @@ def _score_voicing(frets: tuple[int, ...]) -> float:
     is_compact = 1.0 if fret_span <= 1 else 0.0
 
     score = (
-        fret_span * 2.5             # wider stretch = harder
+        fret_span * 2.0             # wider stretch = harder
         + num_fretted * 2.0         # more fingers needed
         + barre_count * 1.5         # barres require sustained pressure
         + avg_fret * 1.0            # higher position = less comfortable
@@ -190,7 +190,7 @@ def _difficulty_label(score: float) -> str:
         return "easy"
     elif score <= 8:
         return "moderate"
-    elif score <= 12:
+    elif score <= 15:
         return "hard"
     return "very hard"
 
