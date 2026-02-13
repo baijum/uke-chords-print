@@ -13,6 +13,7 @@ from reportlab.graphics import renderPDF
 
 from .parser import ChordVoicing, PAGE_BREAK, is_heading
 from .diagram import draw_chord_diagram, DIAGRAM_WIDTH, DIAGRAM_HEIGHT
+from .tunings import get_tuning
 
 # Page margins
 MARGIN_TOP = 0.3 * inch
@@ -43,6 +44,7 @@ def generate_pdf(
     rows: int = 5,
     show_root: bool = False,
     no_fingers: bool = False,
+    tuning: str = "standard",
 ) -> str:
     """
     Generate a PDF with chord diagrams laid out in a grid.
@@ -54,12 +56,18 @@ def generate_pdf(
         paper: Paper size ("letter" or "a4").
         cols: Number of columns per page.
         rows: Number of rows per page.
+        tuning: Tuning name for string label display.
 
     Returns:
         The output file path.
     """
     page_size = PAGE_SIZES.get(paper.lower(), letter)
     page_width, page_height = page_size
+
+    # Get string labels for non-standard tunings
+    tuning_obj = get_tuning(tuning)
+    # Only show string labels for non-standard tunings (baritone has different labels)
+    string_labels = tuning_obj.string_labels if tuning_obj.name != "standard" else None
 
     # Calculate available space
     usable_width = page_width - MARGIN_LEFT - MARGIN_RIGHT
@@ -176,7 +184,7 @@ def generate_pdf(
         if no_fingers:
             voicing.fingers = ""
 
-        drawing = draw_chord_diagram(voicing)
+        drawing = draw_chord_diagram(voicing, string_labels=string_labels)
 
         draw_x = x + x_offset
         draw_y = y - cell_height + y_offset

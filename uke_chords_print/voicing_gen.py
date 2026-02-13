@@ -2,7 +2,8 @@
 Algorithmic ukulele chord voicing generator.
 
 Uses pychord for chord-to-notes resolution and searches all fret
-combinations on standard ukulele tuning (G4-C4-E4-A4) for playable voicings.
+combinations for playable voicings. Supports multiple tunings
+(standard, low-g, baritone).
 """
 
 from __future__ import annotations
@@ -11,9 +12,7 @@ from itertools import product
 
 from pychord import Chord
 
-# Standard ukulele tuning: G4-C4-E4-A4 (re-entrant high-G)
-# MIDI note numbers for each open string
-TUNING = (67, 60, 64, 69)  # G4, C4, E4, A4
+from .tunings import get_tuning_midi, DEFAULT_TUNING
 
 # Note name -> pitch class (0-11, C=0)
 # Includes enharmonic equivalents, double-sharps, and double-flats
@@ -195,6 +194,7 @@ def generate_voicings(
     max_fret: int = 9,
     max_span: int = 3,
     max_results: int = 3,
+    tuning: str = DEFAULT_TUNING,
 ) -> list[dict]:
     """Generate playable ukulele voicings for a chord.
 
@@ -207,6 +207,7 @@ def generate_voicings(
         max_fret: Highest fret to search (0-9 for single-digit format).
         max_span: Maximum fret span among fretted notes.
         max_results: Maximum voicings to return.
+        tuning: Tuning name or alias (e.g., "standard", "low-g", "baritone").
 
     Returns:
         List of voicing dicts with keys: frets, fingers, notes, inversion,
@@ -215,6 +216,8 @@ def generate_voicings(
     Raises:
         ValueError: If the chord name is not recognized by pychord.
     """
+    tuning_midi = get_tuning_midi(tuning)
+
     try:
         chord = Chord(chord_name)
         components = chord.components()
@@ -227,7 +230,7 @@ def generate_voicings(
 
     # Precompute valid frets per string (only those producing a chord tone)
     valid_frets_per_string: list[list[int]] = []
-    for open_midi in TUNING:
+    for open_midi in tuning_midi:
         valid = [
             fret
             for fret in range(max_fret + 1)
@@ -238,7 +241,7 @@ def generate_voicings(
     scored: list[tuple[float, dict]] = []
 
     for frets in product(*valid_frets_per_string):
-        midi_notes = tuple(TUNING[i] + frets[i] for i in range(4))
+        midi_notes = tuple(tuning_midi[i] + frets[i] for i in range(4))
         pcs = tuple(m % 12 for m in midi_notes)
 
         # All chord tones must be present

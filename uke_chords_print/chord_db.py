@@ -2,7 +2,7 @@
 Ukulele chord database.
 
 Generates chord voicings algorithmically using pychord for music theory
-and a fretboard search on standard ukulele tuning (G4-C4-E4-A4).
+and a fretboard search. Supports multiple tunings (standard, low-g, baritone).
 
 Each voicing dict contains:
   - frets: 4-character string, each char is the fret number for G-C-E-A
@@ -36,11 +36,11 @@ CHORD_ALIASES: dict[str, str] = {
 }
 
 
-def lookup_chord(name: str) -> list[dict] | None:
+def lookup_chord(name: str, tuning: str = "standard") -> list[dict] | None:
     """Look up chord voicings by name. Returns list of voicing dicts or None."""
     # Try direct generation
     try:
-        voicings = generate_voicings(name)
+        voicings = generate_voicings(name, tuning=tuning)
         if voicings:
             return voicings
     except ValueError:
@@ -50,7 +50,7 @@ def lookup_chord(name: str) -> list[dict] | None:
     canonical = CHORD_ALIASES.get(name)
     if canonical:
         try:
-            voicings = generate_voicings(canonical)
+            voicings = generate_voicings(canonical, tuning=tuning)
             if voicings:
                 return voicings
         except ValueError:

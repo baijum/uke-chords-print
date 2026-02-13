@@ -9,6 +9,7 @@ Chords are generated algorithmically from music theory using [pychord](https://g
 ## Features
 
 - **Any chord, instantly** -- type a chord name and get a diagram. No static database to maintain.
+- **Multiple tunings** -- supports standard (high-G), low-G, and baritone ukuleles.
 - **Smart voicing selection** -- voicings are ranked by a 7-factor difficulty score based on the [ISMIR 2023 playability rubric](https://ismir2023program.ismir.net/poster_225.html) and the Radicioni biomechanical model.
 - **Print-ready PDFs** -- clean black-and-white diagrams sized for A4 or US Letter, readable from a music stand.
 - **Catalog included** -- ready-made chord sheets for popular progressions, hit songs, classical pieces, and world music.
@@ -45,6 +46,7 @@ python3 -m uke_chords_print [CHORDS...] [OPTIONS]
 | `--single` | | Show only the primary (easiest) voicing per chord |
 | `--show-root` | | Show 'Root' inversion label (hidden by default) |
 | `--no-fingers` | | Hide finger numbers inside the fret dots |
+| `--tuning` | `standard` | Ukulele tuning: `standard`, `low-g`, or `baritone` |
 | `--list` | | List all 108 standard chords and exit |
 
 ### Examples
@@ -64,6 +66,12 @@ python3 -m uke_chords_print --file catalog/popular_chords.txt \
 
 # Mix database lookup and explicit voicings
 python3 -m uke_chords_print Am G7 "F:2010:fingers=2_1_" -o mixed.pdf
+
+# Baritone ukulele (D-G-B-E tuning)
+python3 -m uke_chords_print --tuning baritone C Am G7 F -o baritone.pdf
+
+# Low-G ukulele (linear tuning)
+python3 -m uke_chords_print --tuning low-g C Am G7 F
 ```
 
 ## Input Methods
@@ -159,12 +167,13 @@ Each voicing gets a label: **easy**, **moderate**, **hard**, or **very hard**. T
 Each diagram on the PDF includes:
 
 - **Chord name** in bold at the top
-- **Fretboard grid** with 4 strings (G-C-E-A) and 4 frets
+- **Fretboard grid** with 4 strings and 4 frets
 - **Nut** (thick top line) for open position, or **fret indicator** for higher positions
 - **Filled dots** with **fingering numbers** inside
 - **Open circles** for open strings, **X marks** for muted strings
 - **Note names** below the fretboard
 - **Fret numbers** and **inversion label** at the bottom
+- **Tuning indicator** for non-standard tunings (e.g., D-G-B-E for baritone)
 
 ## Chord Sheet Catalog
 
@@ -185,9 +194,35 @@ python3 -m uke_chords_print --file catalog/songs/beginner_hits.txt \
 
 See the full list in the [Catalog README](catalog/README.md).
 
+## Tunings
+
+Three ukulele tunings are supported:
+
+| Tuning | Aliases | Notes | Description |
+|--------|---------|-------|-------------|
+| `standard` | `gcea`, `high-g` | G4-C4-E4-A4 | Re-entrant high-G (default) |
+| `low-g` | `gcea-low`, `linear` | G3-C4-E4-A4 | Linear low-G |
+| `baritone` | `dgbe` | D3-G3-B3-E4 | Baritone ukulele |
+
+```bash
+# Standard tuning (default)
+python3 -m uke_chords_print C Am G7 F
+
+# Low-G tuning
+python3 -m uke_chords_print --tuning low-g C Am G7 F
+
+# Baritone tuning (same chord shapes as guitar)
+python3 -m uke_chords_print --tuning baritone C Am G7 F -o baritone.pdf
+
+# List chords for baritone
+python3 -m uke_chords_print --list --tuning baritone
+```
+
+For non-standard tunings, the string names are shown on each diagram (e.g., `D-G-B-E` for baritone).
+
 ## Voicing Notation
 
-Voicings use a **4-character string** for standard tuning (**G-C-E-A**):
+Voicings use a **4-character string** representing each string from left to right:
 
 | Character | Meaning |
 |-----------|---------|
@@ -195,12 +230,22 @@ Voicings use a **4-character string** for standard tuning (**G-C-E-A**):
 | `1`-`9` | Fret number |
 | `X` | Muted string |
 
+**Standard tuning (G-C-E-A):**
+
 | Voicing | Chord | Strings |
 |---------|-------|---------|
 | `0003` | C | G open, C open, E open, A at 3rd fret |
 | `2010` | F | G at 2nd, C open, E at 1st, A open |
 | `0232` | G | G open, C at 2nd, E at 3rd, A at 2nd |
 | `2000` | Am | G at 2nd, C open, E open, A open |
+
+**Baritone tuning (D-G-B-E):**
+
+| Voicing | Chord | Strings |
+|---------|-------|---------|
+| `2010` | C | D at 2nd, G open, B at 1st, E open |
+| `2220` | A | D at 2nd, G at 2nd, B at 2nd, E open |
+| `0232` | D | D open, G at 2nd, B at 3rd, E at 2nd |
 
 ## Requirements
 
@@ -218,6 +263,7 @@ uke-chords-print/
     cli.py               # Argument parsing and CLI logic
     chord_db.py          # Chord lookup (wraps voicing generator)
     voicing_gen.py       # Algorithmic voicing generator + difficulty scoring
+    tunings.py           # Tuning definitions (standard, low-g, baritone)
     parser.py            # Input parsing (CLI args + text files)
     diagram.py           # Chord diagram renderer (ReportLab)
     pdf_generator.py     # Page layout and PDF output

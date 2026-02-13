@@ -15,6 +15,7 @@ import sys
 from .chord_db import list_all_chords, lookup_chord
 from .parser import parse_cli_args, parse_file, ChordVoicing, PAGE_BREAK, is_heading
 from .pdf_generator import generate_pdf
+from .tunings import TUNING_CHOICES, DEFAULT_TUNING, get_tuning
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -91,19 +92,30 @@ def build_parser() -> argparse.ArgumentParser:
         dest="no_fingers",
         help="Hide finger numbers inside the fret dots",
     )
+    parser.add_argument(
+        "--tuning",
+        choices=TUNING_CHOICES,
+        default=DEFAULT_TUNING,
+        help=(
+            "Ukulele tuning: standard (gcea, high-g), low-g (gcea-low, linear), "
+            "baritone (dgbe). Default: standard"
+        ),
+    )
 
     return parser
 
 
-def print_chord_list():
+def print_chord_list(tuning: str = DEFAULT_TUNING):
     """Print all chords in the built-in database."""
-    print("Built-in ukulele chord database:")
+    tuning_obj = get_tuning(tuning)
+    tuning_display = f"{tuning_obj.name} ({'-'.join(tuning_obj.string_labels)})"
+    print(f"Built-in ukulele chord database [{tuning_display}]:")
     print("=" * 60)
 
     chords = list_all_chords()
     # Group by type
     for name in chords:
-        voicings = lookup_chord(name) or []
+        voicings = lookup_chord(name, tuning=tuning) or []
         count = len(voicings)
         frets_list = ", ".join(v["frets"] for v in voicings)
         suffix = "voicing" if count == 1 else "voicings"
@@ -118,7 +130,7 @@ def main(argv: list[str] | None = None):
 
     # Handle --list
     if args.list_chords:
-        print_chord_list()
+        print_chord_list(tuning=args.tuning)
         return
 
     # Collect voicings from all sources
@@ -126,7 +138,7 @@ def main(argv: list[str] | None = None):
 
     if args.file:
         try:
-            voicings.extend(parse_file(args.file, single=args.single))
+            voicings.extend(parse_file(args.file, single=args.single, tuning=args.tuning))
         except FileNotFoundError:
             print(f"Error: File not found: {args.file}", file=sys.stderr)
             sys.exit(1)
@@ -136,7 +148,7 @@ def main(argv: list[str] | None = None):
 
     if args.chords:
         try:
-            voicings.extend(parse_cli_args(args.chords, single=args.single))
+            voicings.extend(parse_cli_args(args.chords, single=args.single, tuning=args.tuning))
         except ValueError as e:
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)
@@ -157,6 +169,7 @@ def main(argv: list[str] | None = None):
             rows=args.rows,
             show_root=args.show_root,
             no_fingers=args.no_fingers,
+            tuning=args.tuning,
         )
         chord_count = sum(
             1 for v in voicings if v is not PAGE_BREAK and not is_heading(v)
