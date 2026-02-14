@@ -9,7 +9,7 @@ Chords are generated algorithmically from music theory using [pychord](https://g
 ## Features
 
 - **Any chord, instantly** -- type a chord name and get a diagram. No static database to maintain.
-- **Multiple tunings** -- supports standard (high-G), low-G, and baritone ukuleles.
+- **Multiple tunings** -- supports standard (high-G), low-G, baritone, and D-tuning ukuleles.
 - **Smart voicing selection** -- voicings are ranked by a 7-factor difficulty score based on the [ISMIR 2023 playability rubric](https://ismir2023program.ismir.net/poster_225.html) and the Radicioni biomechanical model.
 - **Print-ready PDFs** -- clean black-and-white diagrams sized for A4 or US Letter, readable from a music stand.
 - **Catalog included** -- ready-made chord sheets for popular progressions, hit songs, classical pieces, and world music.
@@ -181,7 +181,7 @@ A ready-to-use collection of chord sheets lives in [`catalog/`](catalog/):
 
 | Category | Files |
 |----------|-------|
-| **Reference** | [Popular chords](catalog/popular_chords.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/latest/download/popular_chords.pdf)), [All 108 chords](catalog/all_chords.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/latest/download/all_chords.pdf)), [Challenging chords](catalog/challenging_chords.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/latest/download/challenging_chords.pdf)) |
+| **Reference** | [Popular chords](catalog/popular_chords.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.3.0/popular_chords.pdf)), [All 108 chords](catalog/all_chords.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.3.0/all_chords.pdf)), [Challenging chords](catalog/challenging_chords.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.3.0/challenging_chords.pdf)) |
 | **Progressions** | [Pop anthems](catalog/progressions/pop_anthems.txt), [12-bar blues](catalog/progressions/12_bar_blues.txt), [Jazz essentials](catalog/progressions/jazz_essentials.txt), [Classic rock](catalog/progressions/classic_rock.txt), [50s doo-wop](catalog/progressions/50s_doo_wop.txt) |
 | **Songs** | [Beginner hits](catalog/songs/beginner_hits.txt), [Pop classics](catalog/songs/pop_classics.txt), [Campfire songs](catalog/songs/campfire_songs.txt) |
 | **Classical** | [Ode to Joy, Pachelbel Canon, Amazing Grace, Greensleeves...](catalog/classical/classical_pieces.txt) |
@@ -196,13 +196,14 @@ See the full list in the [Catalog README](catalog/README.md).
 
 ## Tunings
 
-Three ukulele tunings are supported:
+Four ukulele tunings are supported:
 
 | Tuning | Aliases | Notes | Description |
 |--------|---------|-------|-------------|
 | `standard` | `gcea`, `high-g` | G4-C4-E4-A4 | Re-entrant high-G (default) |
 | `low-g` | `gcea-low`, `linear` | G3-C4-E4-A4 | Linear low-G |
 | `baritone` | `dgbe` | D3-G3-B3-E4 | Baritone ukulele |
+| `d-tuning` | `adf#b` | A4-D4-F#4-B4 | Standard raised a whole step |
 
 ```bash
 # Standard tuning (default)
@@ -263,7 +264,7 @@ uke-chords-print/
     cli.py               # Argument parsing and CLI logic
     chord_db.py          # Chord lookup (wraps voicing generator)
     voicing_gen.py       # Algorithmic voicing generator + difficulty scoring
-    tunings.py           # Tuning definitions (standard, low-g, baritone)
+    tunings.py           # Tuning definitions (standard, low-g, baritone, d-tuning)
     parser.py            # Input parsing (CLI args + text files)
     diagram.py           # Chord diagram renderer (ReportLab)
     pdf_generator.py     # Page layout and PDF output
