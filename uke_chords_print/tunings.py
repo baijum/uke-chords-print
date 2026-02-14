@@ -38,6 +38,12 @@ TUNINGS: dict[str, Tuning] = {
         string_labels=("D", "G", "B", "E"),
         aliases=("dgbe",),
     ),
+    "d-tuning": Tuning(
+        name="d-tuning",
+        midi_notes=(69, 62, 66, 71),  # A4, D4, F#4, B4
+        string_labels=("A", "D", "F#", "B"),
+        aliases=("adf#b",),
+    ),
 }
 
 # Build alias lookup table
