@@ -269,14 +269,17 @@ def generate_voicings(
     """
     tuning_midi = get_tuning_midi(tuning)
 
+    # pychord reads "/<digit>" as an inversion, so "C6/9" would lose its 9th
+    pychord_name = chord_name.replace("6/9", "69")
+
     try:
-        chord = Chord(chord_name)
+        chord = Chord(pychord_name)
         components = chord.components()
         root = chord.root
         bass = chord.on
         # A slash chord's inversion is named from the chord above the bass
         base_components = (
-            Chord(chord_name[:chord_name.rindex("/")]).components()
+            Chord(pychord_name[:pychord_name.rindex("/")]).components()
             if bass else components
         )
     except Exception as e:
