@@ -131,6 +131,8 @@ Inline comments start with whitespace, then `#`, then whitespace (as in the exam
 
 Unknown options, a malformed `fingers=`, or a `starting_fret=` below 1 stop with an error naming the line. Files are read as UTF-8 (a byte-order mark, as Windows Notepad adds, is fine). Long titles and headings shrink to fit the page.
 
+Titles, headings, chord names, notes, and inversion labels can use any script: characters outside basic Latin (e.g. `♪ ♭`, Greek, Cyrillic, Chinese, Japanese, Korean) are drawn with fonts bundled in [`uke_chords_print/bundled_fonts/`](uke_chords_print/bundled_fonts/), so sheets look the same on every machine. Other characters (e.g. most emoji) use an installed system font if one has them; otherwise they print as boxes and the CLI prints a warning. Right-to-left scripts are not shaped.
+
 See [`example_chords.txt`](example_chords.txt) for a complete sample.
 
 ## Chord Database
@@ -279,6 +281,8 @@ uke-chords-print/
     parser.py            # Input parsing (CLI args + text files)
     diagram.py           # Chord diagram renderer (ReportLab)
     pdf_generator.py     # Page layout and PDF output
+    fonts.py             # Fallback fonts for non-Latin text
+    bundled_fonts/       # DejaVu Sans, Droid Sans Fallback, Baekmuk (with licenses)
   catalog/               # Pre-made chord sheet files
     progressions/        # Named chord progressions
     songs/               # Hit songs by difficulty

@@ -56,6 +56,7 @@ cli.py ──► parser.py ──► chord_db.py ──► voicing_gen.py ──
 | `voicing_gen.py` | Chord → pitch classes → search frets 0–9 on 4 strings → filter (required chord tones present — 5+ note chords drop the 5th, then inner extensions; span ≤ 3) → score → top 3. Also finger assignment and inversion detection. |
 | `tunings.py` | `Tuning` dataclass + `TUNINGS` dict (MIDI notes per string, labels, aliases). `TUNING_CHOICES` feeds argparse. |
 | `pdf_generator.py` | `_paginate` splits voicings into pages of headings and rows (max `rows` rows per page, no empty pages), then draws them. Cell height reserves room for the title and the most headings on any page, so every page fits all its rows at one diagram size. |
+| `fonts.py` | Font fallback: splits text into runs; characters outside Windows-1252 (the built-in PDF fonts) use `bundled_fonts/` first, then system fonts (`fc-match` / known paths). `draw_centred` (canvas) and `centred_strings` (Drawing) render the runs; `missing_characters()` feeds the CLI warning. |
 | `diagram.py` | Draws a single fretboard (nut/`Nfr` label, dots with finger numbers, open/mute markers, notes, fret string, inversion). Geometry constants in mm at the top. |
 
 ### Voicing representation
@@ -126,6 +127,14 @@ Generator output is a dict; the parser converts it into `ChordVoicing`:
 - **Slash chords** (`C/G`): the generator keeps only shapes whose lowest
   MIDI pitch is the bass when any exist, and labels inversions from the
   chord above the bass (pychord puts the bass first in `components()`).
+- **Free text goes through `fonts.py`.** Draw titles, headings, chord names,
+  notes, and inversion labels with `draw_centred` / `centred_strings` and
+  measure them with `fonts.text_width` (via `fit_font_size`), never plain
+  `drawCentredString` / `String`, or non-Latin text prints as boxes.
+  Bundled fonts must be TrueType-outline `.ttf` (ReportLab can't embed CFF
+  `.otf`); keep their license files in `bundled_fonts/` and the table in
+  its README current. Only used glyphs are embedded, so ASCII-only sheets
+  don't grow.
 - `__version__` in `__init__.py` should match the latest `vX.Y.Z` release
   tag; bump it when tagging a release.
 

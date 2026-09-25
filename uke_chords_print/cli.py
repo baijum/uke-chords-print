@@ -13,6 +13,7 @@ import argparse
 import sys
 
 from .chord_db import list_all_chords, lookup_chord
+from .fonts import missing_characters
 from .parser import parse_cli_args, parse_file, ChordVoicing, PAGE_BREAK, is_heading
 from .pdf_generator import generate_pdf
 from .tunings import TUNING_CHOICES, DEFAULT_TUNING, get_tuning
@@ -182,6 +183,13 @@ def main(argv: list[str] | None = None):
             1 for v in voicings if v is not PAGE_BREAK and not is_heading(v)
         )
         print(f"Generated {chord_count} chord diagram(s) -> {output}")
+        missing = missing_characters()
+        if missing:
+            print(
+                f"Warning: no available font can show "
+                f"{' '.join(sorted(missing))}; they print as boxes.",
+                file=sys.stderr,
+            )
     except Exception as e:
         print(f"Error generating PDF: {e}", file=sys.stderr)
         sys.exit(1)

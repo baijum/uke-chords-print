@@ -13,6 +13,7 @@ from reportlab.lib.units import mm, inch
 from reportlab.pdfgen import canvas
 from reportlab.graphics import renderPDF
 
+from .fonts import draw_centred
 from .parser import ChordVoicing, PAGE_BREAK, is_heading
 from .diagram import (
     draw_chord_diagram, fit_font_size, DIAGRAM_WIDTH, DIAGRAM_HEIGHT,
@@ -183,11 +184,12 @@ def generate_pdf(
         y = page_height - MARGIN_TOP
         if title and page_num == 0:
             # Long titles shrink to fit between the side margins
-            c.setFont("Helvetica-Bold", fit_font_size(
-                title, "Helvetica-Bold", TITLE_FONT_SIZE, usable_width
-            ))
-            c.drawCentredString(
-                page_width / 2, y - 0.75 * TITLE_FONT_SIZE, title
+            draw_centred(
+                c, page_width / 2, y - 0.75 * TITLE_FONT_SIZE, title,
+                "Helvetica-Bold",
+                fit_font_size(
+                    title, "Helvetica-Bold", TITLE_FONT_SIZE, usable_width
+                ),
             )
             y -= TITLE_HEIGHT
 
@@ -202,14 +204,13 @@ def generate_pdf(
         for entry in page:
             # Section heading -- full-width line, compact height
             if not isinstance(entry, list):
-                c.setFont("Helvetica-Bold", fit_font_size(
-                    entry.notes, "Helvetica-Bold", HEADING_FONT_SIZE,
-                    usable_width,
-                ))
-                c.drawCentredString(
-                    page_width / 2,
-                    y - HEADING_HEIGHT + 2 * mm,
-                    entry.notes,
+                draw_centred(
+                    c, page_width / 2, y - HEADING_HEIGHT + 2 * mm,
+                    entry.notes, "Helvetica-Bold",
+                    fit_font_size(
+                        entry.notes, "Helvetica-Bold", HEADING_FONT_SIZE,
+                        usable_width,
+                    ),
                 )
                 y -= HEADING_HEIGHT
                 continue

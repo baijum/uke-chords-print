@@ -21,6 +21,7 @@ from reportlab.graphics import renderPDF
 from reportlab.lib.colors import black, white, HexColor
 from reportlab.pdfbase.pdfmetrics import stringWidth
 
+from .fonts import centred_strings, text_width
 from .parser import ChordVoicing
 
 # --- Layout constants (all in mm, converted to points) ---
@@ -85,7 +86,7 @@ def fit_font_size(
     Returns:
         font_size, or a smaller size at which the text fits.
     """
-    width = stringWidth(text, font_name, font_size)
+    width = text_width(text, font_name, font_size)
     if width <= max_width:
         return font_size
     return font_size * max_width / width
@@ -239,15 +240,16 @@ def draw_chord_diagram(
                 ))
 
     # --- Chord name at the top ---
-    d.add(String(
+    # Free text (chord name, notes, inversion) may need fallback fonts
+    for s in centred_strings(
         fb_left + FRETBOARD_WIDTH / 2,
         DIAGRAM_HEIGHT - 4 * mm,
         voicing.name,
-        fontSize=fit_font_size(voicing.name, "Helvetica-Bold", CHORD_NAME_SIZE),
+        "Helvetica-Bold",
+        fit_font_size(voicing.name, "Helvetica-Bold", CHORD_NAME_SIZE),
         fillColor=LABEL_COLOR,
-        textAnchor="middle",
-        fontName="Helvetica-Bold",
-    ))
+    ):
+        d.add(s)
 
     # --- Notes below the fretboard ---
     if voicing.notes:
@@ -256,14 +258,11 @@ def draw_chord_diagram(
             # "-" holds a muted string's place so later notes stay aligned
             if i < NUM_STRINGS and note != "-":
                 x = fb_left + i * STRING_SPACING
-                d.add(String(
-                    x, fb_bottom - 4 * mm,
-                    note,
-                    fontSize=NOTE_SIZE,
+                for s in centred_strings(
+                    x, fb_bottom - 4 * mm, note, "Helvetica-Bold", NOTE_SIZE,
                     fillColor=LABEL_COLOR,
-                    textAnchor="middle",
-                    fontName="Helvetica-Bold",
-                ))
+                ):
+                    d.add(s)
 
     # --- Frets string below notes (with tuning indicator for non-standard tunings) ---
     if string_labels:
@@ -283,14 +282,14 @@ def draw_chord_diagram(
 
     # --- Inversion label at the bottom ---
     if voicing.inversion:
-        d.add(String(
+        for s in centred_strings(
             fb_left + FRETBOARD_WIDTH / 2,
             fb_bottom - 17 * mm,
             voicing.inversion,
-            fontSize=INVERSION_SIZE,
+            "Helvetica-Bold",
+            fit_font_size(voicing.inversion, "Helvetica-Bold", INVERSION_SIZE),
             fillColor=HexColor("#444444"),
-            textAnchor="middle",
-            fontName="Helvetica-Bold",
-        ))
+        ):
+            d.add(s)
 
     return d
