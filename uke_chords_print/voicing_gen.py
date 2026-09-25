@@ -46,8 +46,11 @@ def _assign_fingers(frets: tuple[int, ...]) -> str:
 
     Uses a stretch-aware heuristic based on standard ukulele technique:
     - Open strings = 0
-    - All strings at the same fret share one finger (barre / flat finger)
-    - Finger number based on offset from lowest fret (one-finger-per-fret)
+    - Strings at the same fret share one finger (barre / flat finger) only
+      when every string between them is fretted higher; a finger can't
+      lie across a string that must ring open or sound a lower fret
+    - Finger number based on offset from lowest fret (one-finger-per-fret),
+      always increasing with fret and never above 4
     """
     if all(f == 0 for f in frets):
         return "0" * len(frets)
@@ -56,24 +59,27 @@ def _assign_fingers(frets: tuple[int, ...]) -> str:
     non_zero = [f for f in frets if f > 0]
     min_fret = min(non_zero)
 
-    # Group fretted strings by fret value
-    fret_groups: dict[int, list[int]] = {}
-    for i, f in enumerate(frets):
-        if f > 0:
-            fret_groups.setdefault(f, []).append(i)
-
-    # Build finger units: one unit per unique fret value.
-    # On ukulele (4 strings), a single finger can press non-adjacent
-    # strings at the same fret, so all strings share one finger.
+    # Build finger units: strings at one fret that a single finger can
+    # cover together, in fret order (then string order).
     finger_units: list[tuple[int, list[int]]] = []
-    for fret_val in sorted(fret_groups):
-        finger_units.append((fret_val, fret_groups[fret_val]))
+    for fret_val in sorted(set(non_zero)):
+        strings = [i for i, f in enumerate(frets) if f == fret_val]
+        unit = [strings[0]]
+        for s in strings[1:]:
+            if all(frets[k] > fret_val for k in range(unit[-1] + 1, s)):
+                unit.append(s)
+            else:
+                finger_units.append((fret_val, unit))
+                unit = [s]
+        finger_units.append((fret_val, unit))
 
-    # Assign fingers: stretch-aware with sequential guarantee
+    # Assign fingers: stretch-aware, strictly increasing, and leaving
+    # enough fingers (max 4) for the units still to come
     next_finger = 1
-    for fret_val, string_indices in finger_units:
+    for i, (fret_val, string_indices) in enumerate(finger_units):
         target = fret_val - min_fret + 1
-        fn = max(min(target, 4), next_finger)
+        last_allowed = 4 - (len(finger_units) - 1 - i)
+        fn = min(max(min(target, 4), next_finger), last_allowed)
         for s in string_indices:
             fingers[s] = fn
         next_finger = fn + 1

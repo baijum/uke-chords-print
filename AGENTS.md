@@ -91,9 +91,14 @@ Generator output is a dict; the parser converts it into `ChordVoicing`:
   this with an `@tuning <name>` line (the catalog uses `@tuning standard`);
   when `--tuning` has different string pitch classes
   (`tunings.shapes_compatible`), `parse_file` swaps each explicit line for the
-  primary generated voicing. Without `@tuning`, explicit lines are used
+  easiest generated voicing not already used for that chord in the file
+  (`_fallback_voicing`). Without `@tuning`, explicit lines are used
   verbatim. Keep `@tuning` below the first line of catalog files —
   `generate_catalog.sh` reads line 1 as the title.
+- **Fingering** (`_assign_fingers`): same-fret strings share one finger
+  only when every string between them is fretted higher — never across an
+  open or lower-fretted string. Keep pinned `fingers=` in the catalog
+  consistent with that rule.
 - **Scoring changes ripple into content.** `_score_voicing` and
   `_difficulty_label` thresholds decide which voicing is "primary"
   (`--single`) and which chords belong in `catalog/challenging_chords.txt`.

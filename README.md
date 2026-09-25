@@ -123,7 +123,7 @@ Em
 | `starting_fret=` | No | `starting_fret=5` | First fret shown on diagram (derived from the frets when omitted; the shape must fit the 4 frets shown) |
 | `inversion=` | No | `inversion=Root` | Inversion label |
 
-The optional `@tuning <name>` line says which tuning the explicit voicings after it were written for. When you print with a `--tuning` whose shapes differ (e.g. `@tuning standard` printed with `--tuning baritone`), those lines are replaced by the easiest generated voicing for the chord name. Standard and low-G share shapes, so explicit voicings are kept between them. Without `@tuning`, explicit voicings are always used as written. The bundled catalog files declare `@tuning standard`.
+The optional `@tuning <name>` line says which tuning the explicit voicings after it were written for. When you print with a `--tuning` whose shapes differ (e.g. `@tuning standard` printed with `--tuning baritone`), those lines are replaced by the easiest generated voicing for the chord name (a different one for each pinned shape of the same chord, so no diagram repeats). Standard and low-G share shapes, so explicit voicings are kept between them. Without `@tuning`, explicit voicings are always used as written. The bundled catalog files declare `@tuning standard`.
 
 Inline comments start with whitespace, then `#`, then whitespace (as in the example above). This keeps sharps like `C#` and heading text like `= Track #1` intact.
 

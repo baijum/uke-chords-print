@@ -161,6 +161,7 @@ def parse_file_line(
     single: bool = False,
     tuning: str = "standard",
     voicing_tuning: str | None = None,
+    fallback_used: set[tuple[str, str]] | None = None,
 ) -> list[ChordVoicing]:
     """
     Parse a single line from a text input file.
@@ -172,7 +173,8 @@ def parse_file_line(
       C, 0003, fingers=___3, starting_fret=3  -> with starting fret
 
     If voicing_tuning is set and its fret shapes don't match the active
-    tuning, explicit voicings are replaced by the primary generated voicing.
+    tuning, explicit voicings are replaced by a generated voicing (see
+    _fallback_voicing; fallback_used tracks replacements within one file).
     """
     # Strip comments and whitespace
     line = _strip_comment(line)
@@ -202,7 +204,7 @@ def parse_file_line(
 
     # Explicit shape written for a tuning with different fingerings
     if voicing_tuning and not shapes_compatible(voicing_tuning, tuning):
-        return _lookup_voicings(name, single=True, tuning=tuning)
+        return _fallback_voicing(name, tuning, fallback_used)
 
     kwargs = {}
     for extra in parts[2:]:
@@ -227,6 +229,7 @@ def parse_file(
     """Parse an entire text file and return all chord voicings."""
     voicings = []
     voicing_tuning = None
+    fallback_used: set[tuple[str, str]] = set()
     with open(filepath, "r") as f:
         for lineno, line in enumerate(f, 1):
             try:
@@ -240,6 +243,7 @@ def parse_file(
                 voicings.extend(parse_file_line(
                     line, single=single, tuning=tuning,
                     voicing_tuning=voicing_tuning,
+                    fallback_used=fallback_used,
                 ))
             except ValueError as e:
                 raise ValueError(f"Line {lineno}: {e}") from e
@@ -254,6 +258,34 @@ def parse_cli_args(
     for arg in args:
         voicings.extend(parse_cli_arg(arg, single=single, tuning=tuning))
     return voicings
+
+
+def _fallback_voicing(
+    name: str, tuning: str, used: set[tuple[str, str]] | None
+) -> list[ChordVoicing]:
+    """Replace an explicit voicing written for another tuning.
+
+    Returns the easiest generated voicing not already used in place of an
+    earlier explicit line, so a file that pins several shapes for one chord
+    (e.g. two E voicings) doesn't print the same diagram twice.
+
+    Args:
+        name: Chord name from the explicit line.
+        tuning: Active tuning.
+        used: (name, frets) pairs already used as replacements, updated in
+            place; None disables the check.
+
+    Returns:
+        A single-item list with the replacement voicing.
+    """
+    options = _lookup_voicings(name, tuning=tuning)
+    for voicing in options:
+        key = (voicing.name, voicing.frets)
+        if used is None or key not in used:
+            if used is not None:
+                used.add(key)
+            return [voicing]
+    return options[:1]
 
 
 def _lookup_voicings(

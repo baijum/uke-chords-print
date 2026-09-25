@@ -23,9 +23,12 @@ MARGIN_BOTTOM = 0.4 * inch
 MARGIN_LEFT = 0.25 * inch
 MARGIN_RIGHT = 0.25 * inch
 
-# Title area
-TITLE_HEIGHT = 0.15 * inch
+# Title area -- drawn below the top margin so printers don't clip it
 TITLE_FONT_SIZE = 16
+TITLE_HEIGHT = TITLE_FONT_SIZE * 1.1  # cap height + descenders + gap
+
+# Page number baseline, inside the bottom margin but clear of the edge
+FOOTER_Y = 0.25 * inch
 
 # Section heading
 HEADING_FONT_SIZE = 14
@@ -170,14 +173,16 @@ def generate_pdf(
         y = page_height - MARGIN_TOP
         if title and page_num == 0:
             c.setFont("Helvetica-Bold", TITLE_FONT_SIZE)
-            c.drawCentredString(page_width / 2, y + 2 * mm, title)
+            c.drawCentredString(
+                page_width / 2, y - 0.75 * TITLE_FONT_SIZE, title
+            )
             y -= TITLE_HEIGHT
 
         # Page number footer
         c.setFont("Helvetica", 8)
         c.drawCentredString(
             page_width / 2,
-            MARGIN_BOTTOM / 4,
+            FOOTER_Y,
             f"Page {page_num + 1}",
         )
 
