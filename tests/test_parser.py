@@ -7,6 +7,7 @@ import pytest
 from uke_chords_print.parser import (
     PAGE_BREAK,
     ChordVoicing,
+    ChordWarning,
     _strip_comment,
     is_heading,
     make_heading,
@@ -68,6 +69,16 @@ class TestFileLines:
         assert is_heading(heading)
         assert heading.notes == "Verse"
 
+    def test_heading_without_space(self):
+        [heading] = parse_file_line("=Intro")
+        assert is_heading(heading)
+        assert heading.notes == "Intro"
+
+    @pytest.mark.parametrize("line", ["=", "= ", "=   # comment"])
+    def test_empty_heading(self, line):
+        with pytest.raises(ValueError, match="Heading text missing"):
+            parse_file_line(line)
+
     def test_explicit_voicing_fills_labels(self):
         [v] = parse_file_line("C, 0003")
         assert v == ChordVoicing(
@@ -113,12 +124,15 @@ class TestFileLines:
         ("C, 003", "Invalid frets"),
         ("C, 00a3", "Invalid frets"),
         ("C, 00003", "Invalid frets"),
+        ("C, 000³", "Invalid frets"),         # non-ASCII digits
+        ("C, 000٣", "Invalid frets"),
         ("C, 0003, fingers", "Expected key=value"),
         ("C, 0003, finger=0003", "Unknown option 'finger'"),
         ("C, 0003, fingers=003", "Invalid fingers"),
         ("C, 0003, fingers=0005", "Invalid fingers"),
         ("C, 0003, starting_fret=0", "Invalid starting_fret"),
         ("C, 0003, starting_fret=x", "Invalid starting_fret"),
+        ("C, 0003, starting_fret=²", "Invalid starting_fret"),
         ("C, 0019", "don't fit the 4 frets"),
         ("C, 5433, starting_fret=4", "don't fit the 4 frets"),
         ("C, 1006", "don't fit the 4 frets"),
@@ -229,6 +243,45 @@ class TestTuningDirective:
         assert voicings[0].frets == "0003"
         assert voicings[1].frets == generate_voicings(
             "C", tuning="baritone")[0]["frets"]
+
+    def test_repeated_shape_keeps_its_replacement(self, chord_file):
+        # A song pins C 0003 in every section: one replacement throughout,
+        # while the two different E shapes stay distinct
+        path = chord_file(
+            "@tuning standard\n"
+            "C, 0003\nE, 1402\nC, 0003\nE, 4442\nC, 0003\nE, 1402\n"
+        )
+        voicings = parse_file(path, tuning="baritone")
+        c_shapes = {v.frets for v in voicings if v.name == "C"}
+        e_shapes = [v.frets for v in voicings if v.name == "E"]
+        assert len(c_shapes) == 1
+        assert e_shapes[0] != e_shapes[1]
+        assert e_shapes[2] == e_shapes[0]
+
+    def test_all_muted_shape_kept(self, chord_file, recwarn):
+        path = chord_file("@tuning standard\nN.C., XXXX\n")
+        [v] = parse_file(path, tuning="baritone")
+        assert (v.name, v.frets) == ("N.C.", "XXXX")
+        assert not recwarn.list
+
+    def test_non_chord_name_kept_with_warning(self, chord_file):
+        path = chord_file(
+            "@tuning standard\nC\nMy riff, 0003, notes=G C E C\n"
+        )
+        with pytest.warns(ChordWarning, match=(
+                r"^Line 3: 'My riff' isn't a chord name, so its standard "
+                r"shape 0003 is printed as written$")):
+            voicings = parse_file(path, single=True, tuning="baritone")
+        riff = voicings[1]
+        assert riff.frets == "0003"
+        assert riff.notes == ""  # standard-tuning labels are dropped
+
+    def test_unplayable_chord_kept_with_warning(self, chord_file):
+        path = chord_file("@tuning standard\nFmaj9, 0000\n")
+        with pytest.warns(ChordWarning, match="no playable d-tuning voicing"):
+            [v] = parse_file(path, tuning="d-tuning")
+        assert v.frets == "0000"
+        assert v.notes == "A D Gb B"  # labelled for the tuning printed
 
     def test_alias_and_comment(self, chord_file):
         path = chord_file("@tuning gcea  # shapes below\nC, 0003\n")

@@ -104,9 +104,13 @@ Generator output is a dict; the parser converts it into `ChordVoicing`:
   `B7, 2322, fingers=1211, ...` is a fret shape for one tuning. Files mark
   this with an `@tuning <name>` line (the catalog uses `@tuning standard`);
   when `--tuning` has different string pitch classes
-  (`tunings.shapes_compatible`), `parse_file` swaps each explicit line for the
-  easiest generated voicing not already used for that chord in the file
-  (`_fallback_voicing`). Without `@tuning`, explicit lines are used
+  (`tunings.shapes_compatible`), `parse_file` swaps each explicit line for a
+  generated voicing (`_fallback_voicing`): the easiest one not standing in
+  for a different shape of that chord, and always the same one for a
+  repeated shape. All-muted shapes, non-chord names and chords with no
+  voicing in the tuning are kept as written; the last two issue a
+  `ChordWarning`, which `parse_file` prefixes with the line number and
+  `cli.main` prints to stderr. Without `@tuning`, explicit lines are used
   verbatim. Keep `@tuning` below the first line of catalog files —
   `generate_catalog.sh` reads line 1 as the title.
 - **Fingering** (`_finger_units` / `_assign_fingers`): a finger never lies

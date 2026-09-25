@@ -35,9 +35,10 @@ _NOTE_TO_PC: dict[str, int] = {
 }
 
 
-# Sharp spelling for notes outside a chord (e.g. a passing tone in an
-# explicit voicing)
+# Spelling for notes outside a chord (e.g. a passing tone in an explicit
+# voicing): flats for chords spelled with flats (and F), otherwise sharps
 _PC_TO_SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+_PC_TO_FLAT = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
 
 # Common added-tone spellings that pychord would read as inversions
 _SLASH_EXTENSIONS = {"6/9": "69", "7/9": "9", "7/13": "13"}
@@ -77,6 +78,7 @@ _QUALITY_RULES: list[tuple[str, str]] = [
     (r"^(\+9|9\+|aug9|9aug)$", "9+5"),    # C+9, Caug9 -> C9+5
     (r"^(\+maj7|maj7\+|maj7aug|maj7#5)$", "maj7+5"),  # Cmaj7#5 -> Cmaj7+5
     (r"(?<=\d)sus$", "sus4"),            # C7sus -> C7sus4
+    (r"add2$", "add9"),                  # Cadd2, Cmadd2 -> Cadd9, Cmadd9
 ]
 
 
@@ -460,14 +462,17 @@ def describe_voicing(
 
     Returns:
         (notes, inversion): space-separated note names in string order
-        ("-" for a muted string) and the inversion label ("" if the
-        lowest note isn't a chord tone).
+        ("-" for a muted string; notes outside the chord use flats if the
+        chord is spelled with flats, else sharps) and the inversion label
+        ("" if the lowest note isn't a chord tone).
 
     Raises:
         ValueError: If the chord name is not recognized.
     """
-    components, _, _, base_components = _resolve_chord(chord_name)
+    components, root, _, base_components = _resolve_chord(chord_name)
     pc_to_name = {_note_to_pc(n): n for n in components}
+    flats = root == "F" or any("b" in n[1:] for n in components)
+    other_names = _PC_TO_FLAT if flats else _PC_TO_SHARP
     tuning_midi = get_tuning_midi(tuning)
 
     names = []
@@ -477,7 +482,7 @@ def describe_voicing(
             names.append("-")
             continue
         pc = (open_midi + fret) % 12
-        names.append(pc_to_name.get(pc, _PC_TO_SHARP[pc]))
+        names.append(pc_to_name.get(pc, other_names[pc]))
         sounding.append(open_midi + fret)
 
     base_pcs = [_note_to_pc(n) for n in base_components]

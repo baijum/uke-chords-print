@@ -102,7 +102,7 @@ python3 -m uke_chords_print --file my_chords.txt -t "Practice Sheet"
 # Comments start with #
 @tuning standard               # Explicit voicings below are for this tuning
 
-= Key of C                    # Section heading
+= Key of C                    # Section heading (space after = optional)
 C                              # Chord name -> best voicings from generator
 Am
 F, 2010, fingers=2010          # Explicit voicing with fingering
@@ -121,15 +121,15 @@ Em
 | Chord name | Yes | `C`, `Am7` | Name shown above the diagram |
 | Frets | No | `0003` | 4-character string, one fret per string in tuning order |
 | `fingers=` | No | `fingers=0003` | Finger per string: 4 characters, `1`-`4`, or `0`/`_` for none |
-| `notes=` | No | `notes=G C E C` | Note names shown below the fretboard (worked out from the chord name when omitted) |
+| `notes=` | No | `notes=G C E C` | Note names shown below the fretboard (worked out from the chord name when omitted; notes outside the chord use flats in flat keys, else sharps) |
 | `starting_fret=` | No | `starting_fret=5` | First fret shown on diagram (derived from the frets when omitted; the shape must fit the 4 frets shown) |
 | `inversion=` | No | `inversion=Root` | Inversion label (worked out from the chord name when omitted) |
 
-The optional `@tuning <name>` line says which tuning the explicit voicings after it were written for. When you print with a `--tuning` whose shapes differ (e.g. `@tuning standard` printed with `--tuning baritone`), those lines are replaced by the easiest generated voicing for the chord name (a different one for each pinned shape of the same chord, so no diagram repeats). Standard and low-G share shapes, so explicit voicings are kept between them. Without `@tuning`, explicit voicings are always used as written. The bundled catalog files declare `@tuning standard`.
+The optional `@tuning <name>` line says which tuning the explicit voicings after it were written for. When you print with a `--tuning` whose shapes differ (e.g. `@tuning standard` printed with `--tuning baritone`), those lines are replaced by the easiest generated voicing for the chord name. Different pinned shapes of one chord get different replacements (so two E shapes don't print the same diagram), while a shape repeated through a song always gets the same one. Lines that can't be replaced print as written: all-muted shapes like `N.C., XXXX` silently, and names that aren't chords (`My riff, 0003`) or chords with no playable voicing in that tuning with a warning naming the line. Standard and low-G share shapes, so explicit voicings are kept between them. Without `@tuning`, explicit voicings are always used as written. The bundled catalog files declare `@tuning standard`.
 
 Inline comments start with whitespace, then `#`, then whitespace (as in the example above). This keeps sharps like `C#` and heading text like `= Track #1` intact.
 
-Unknown options, a malformed `fingers=`, or a `starting_fret=` below 1 stop with an error naming the line. Files are read as UTF-8 (a byte-order mark, as Windows Notepad adds, is fine). Long titles and headings shrink to fit the page.
+Unknown options, a malformed `fingers=`, a `starting_fret=` below 1, or an empty heading stop with an error naming the line. A file with no chords (only headings, say) is an error too. Files are read as UTF-8 (a byte-order mark, as Windows Notepad adds, is fine). Long titles and headings shrink to fit the page.
 
 Titles, headings, chord names, notes, and inversion labels can use any script: characters outside basic Latin (e.g. `♪ ♭`, Greek, Cyrillic, Chinese, Japanese, Korean) are drawn with fonts bundled in [`uke_chords_print/bundled_fonts/`](uke_chords_print/bundled_fonts/), so sheets look the same on every machine. Other characters (e.g. most emoji) use an installed system font if one has them; otherwise they print as boxes and the CLI prints a warning. Right-to-left scripts are not shaped.
 
@@ -153,7 +153,7 @@ The voicing generator supports **108 standard chords** (12 roots x 9 qualities),
 
 Other chords pychord understands work too. Chords with more than four notes (9ths, 11ths, 13ths, `6/9`) drop the 5th first, then the natural 9th/11th, then the root, since a ukulele has only four strings -- e.g. `C9` is voiced as C-E-Bb-D and `C13` as C-E-Bb-A. Altered tones that name the chord are kept over the root: `C9b5` is E-Gb-Bb-D, not a plain C9. Slash chords like `C/G` put the named bass note lowest when a playable shape allows it. Added-tone spellings `6/9`, `7/9`, `maj7/9` and `7/13` are read as `69`, `9`, `maj9` and `13`; other numbers after `/` are rejected rather than guessed.
 
-Common chord-chart spellings work too: `C+` (aug), `C°` / `Co` (dim), `C°7`, `Cø` (m7b5), `CΔ` / `CΔ7` (maj7), `CΔ9`, `Cma7`, `Cm/maj7` / `Cm(maj7)` / `CmΔ7` (minor-major 7th), `Cmin7` / `Cmi7` / `C-7`, `C7(#9)`, `C+7` / `Caug7` (7#5), `C+9` / `Caug9` (9#5), `Cmaj7#5`, `Cmaj7b5`, `Cm9b5`, `Cmaj11`, `Cm(maj9)` / `CmM9`, `CmM7b5`, `CmM11`, `C7#9b13`, `C13b5b9`, `C7sus` (7sus4), `Cmi`, and `♭` / `♯` accidentals (`B♭m7`). The diagram shows the name as you typed it.
+Common chord-chart spellings work too: `C+` (aug), `C°` / `Co` (dim), `C°7`, `Cø` (m7b5), `CΔ` / `CΔ7` (maj7), `CΔ9`, `Cma7`, `Cm/maj7` / `Cm(maj7)` / `CmΔ7` (minor-major 7th), `Cmin7` / `Cmi7` / `C-7`, `C7(#9)`, `C+7` / `Caug7` (7#5), `C+9` / `Caug9` (9#5), `Cmaj7#5`, `Cmaj7b5`, `Cm9b5`, `Cmaj11`, `Cm(maj9)` / `CmM9`, `CmM7b5`, `CmM11`, `C7#9b13`, `C13b5b9`, `C7sus` (7sus4), `Cmi`, `Cadd2` (add9), and `♭` / `♯` accidentals (`B♭m7`). The diagram shows the name as you typed it.
 
 Enharmonic aliases are supported: `Db` = `C#`, `Gb` = `F#`, `Ab` = `G#`, `Bb` = `A#`, etc.
 

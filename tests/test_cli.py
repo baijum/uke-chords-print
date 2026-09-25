@@ -101,6 +101,24 @@ def test_errors_exit_1(run, args, message):
     assert message in out + err
 
 
+def test_headings_only_is_no_chords(run, tmp_path):
+    path = tmp_path / "h.txt"
+    path.write_text("= Just a heading\n---\n", encoding="utf-8")
+    code, out, _, pdf = run("--file", str(path))
+    assert code == 1
+    assert "No chords specified" in out
+    assert not pdf.exists()
+
+
+def test_file_warnings_are_printed(run, tmp_path):
+    path = tmp_path / "song.txt"
+    path.write_text("@tuning standard\nC\nMy riff, 0003\n", encoding="utf-8")
+    code, out, err, _ = run("--file", str(path), "--tuning", "baritone")
+    assert code == 0
+    assert (f"Warning: {path}: Line 3: 'My riff' isn't a chord name" in err)
+    assert "Generated 4 chord diagram(s)" in out
+
+
 def test_unreadable_file(run, tmp_path):
     code, _, err, _ = run("--file", str(tmp_path))
     assert code == 1

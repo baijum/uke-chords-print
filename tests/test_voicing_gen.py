@@ -368,6 +368,15 @@ class TestDescribeVoicing:
         notes, _ = describe_voicing("C", (0, 0, 0, 4))
         assert notes == "G C E C#"
 
+    @pytest.mark.parametrize("chord, frets, notes", [
+        ("Bb", (3, 3, 1, 1), "Bb Eb F Bb"),   # chord spelled with flats
+        ("Cm", (0, 3, 3, 4), "G Eb G Db"),
+        ("F", (2, 0, 1, 1), "A C F Bb"),      # key of F has Bb
+        ("D", (2, 2, 2, 1), "A D F# A#"),     # sharp key
+    ])
+    def test_non_chord_tone_follows_chord_spelling(self, chord, frets, notes):
+        assert describe_voicing(chord, frets)[0] == notes
+
     def test_chord_spelling_is_kept(self):
         notes, _ = describe_voicing("Bb", (3, 2, 1, 1))
         assert notes == "Bb D F Bb"

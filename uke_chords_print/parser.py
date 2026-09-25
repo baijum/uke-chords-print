@@ -18,9 +18,11 @@ Text file format (one chord per line):
                                    (derived from the frets when omitted)
   - ---                         -> force a new page in the PDF
   - = Section Heading            -> section heading rendered in the PDF
+                                   (the space after "=" is optional)
   - @tuning standard            -> explicit voicings below are written for
                                    this tuning; they are regenerated from the
                                    chord name when --tuning needs other shapes
+                                   (see _fallback_voicing)
   - # comment lines are ignored; an inline comment is whitespace, "#",
     then whitespace or end of line (so "C#" and "= Track #1" are kept)
   - blank lines are ignored
@@ -29,11 +31,16 @@ Text file format (one chord per line):
 from __future__ import annotations
 
 import re
+import warnings
 from dataclasses import dataclass
 
 from .chord_db import lookup_chord
 from .tunings import get_tuning, shapes_compatible
 from .voicing_gen import compute_starting_fret, describe_voicing
+
+
+class ChordWarning(UserWarning):
+    """A problem in the input that doesn't stop the sheet being printed."""
 
 
 @dataclass
@@ -78,15 +85,8 @@ def _parse_fret_value(ch: str) -> int:
 
 
 def validate_frets(frets: str) -> bool:
-    """Check that frets is a valid 4-character fret string."""
-    if len(frets) != 4:
-        return False
-    for ch in frets:
-        if ch.upper() == "X":
-            continue
-        if not ch.isdigit():
-            return False
-    return True
+    """Check that frets is a valid 4-character fret string (0-9 or X)."""
+    return len(frets) == 4 and all(ch in "0123456789xX" for ch in frets)
 
 
 _OPTION_KEYS = ("fingers", "starting_fret", "notes", "inversion")
@@ -129,7 +129,7 @@ def _parse_options(extras: list[str]) -> dict:
                 )
             kwargs["fingers"] = val
         elif key == "starting_fret":
-            if not val.isdigit() or int(val) < 1:
+            if not (val.isascii() and val.isdigit()) or int(val) < 1:
                 raise ValueError(
                     f"Invalid starting_fret '{val}'. Expected a number >= 1."
                 )
@@ -219,7 +219,7 @@ def parse_file_line(
     single: bool = False,
     tuning: str = "standard",
     voicing_tuning: str | None = None,
-    fallback_used: set[tuple[str, str]] | None = None,
+    fallback_shapes: dict[tuple[str, str], ChordVoicing] | None = None,
 ) -> list[ChordVoicing]:
     """
     Parse a single line from a text input file.
@@ -232,7 +232,11 @@ def parse_file_line(
 
     If voicing_tuning is set and its fret shapes don't match the active
     tuning, explicit voicings are replaced by a generated voicing (see
-    _fallback_voicing; fallback_used tracks replacements within one file).
+    _fallback_voicing; fallback_shapes tracks replacements within one
+    file).
+
+    Raises:
+        ValueError: On malformed input or an unknown chord name to look up.
     """
     # Strip comments and whitespace
     line = _strip_comment(line)
@@ -243,9 +247,12 @@ def parse_file_line(
     if line == "---":
         return [PAGE_BREAK]
 
-    # Section heading
-    if line.startswith("= "):
-        return [make_heading(line[2:].strip())]
+    # Section heading ("= Verse" or "=Verse")
+    if line.startswith("="):
+        text = line[1:].strip()
+        if not text:
+            raise ValueError("Heading text missing after '='")
+        return [make_heading(text)]
 
     parts = [p.strip() for p in line.split(",")]
     name = parts[0]
@@ -265,7 +272,14 @@ def parse_file_line(
 
     # Explicit shape written for a tuning with different fingerings
     if voicing_tuning and not shapes_compatible(voicing_tuning, tuning):
-        return _fallback_voicing(name, tuning, fallback_used)
+        replacement = _fallback_voicing(
+            name, frets, voicing_tuning, tuning, fallback_shapes
+        )
+        if replacement:
+            return replacement
+        # Kept as written: label it for the tuning it's printed in
+        kwargs.pop("notes", None)
+        kwargs.pop("inversion", None)
 
     return [_explicit_voicing(name, frets, kwargs, tuning)]
 
@@ -273,10 +287,17 @@ def parse_file_line(
 def parse_file(
     filepath: str, single: bool = False, tuning: str = "standard"
 ) -> list[ChordVoicing]:
-    """Parse an entire text file and return all chord voicings."""
+    """Parse an entire text file and return all chord voicings.
+
+    Problems that don't stop the sheet (see _fallback_voicing) are issued
+    as ChordWarning, prefixed with the line number.
+
+    Raises:
+        ValueError: On a malformed line, prefixed with its line number.
+    """
     voicings = []
     voicing_tuning = None
-    fallback_used: set[tuple[str, str]] = set()
+    fallback_shapes: dict[tuple[str, str], ChordVoicing] = {}
     # utf-8-sig also accepts files saved with a byte-order mark (Notepad)
     with open(filepath, "r", encoding="utf-8-sig") as f:
         for lineno, line in enumerate(f, 1):
@@ -288,13 +309,22 @@ def parse_file(
                         raise ValueError("Expected '@tuning <name>'")
                     voicing_tuning = get_tuning(directive[1]).name
                     continue
-                voicings.extend(parse_file_line(
-                    line, single=single, tuning=tuning,
-                    voicing_tuning=voicing_tuning,
-                    fallback_used=fallback_used,
-                ))
+                with warnings.catch_warnings(record=True) as caught:
+                    warnings.simplefilter("always", ChordWarning)
+                    voicings.extend(parse_file_line(
+                        line, single=single, tuning=tuning,
+                        voicing_tuning=voicing_tuning,
+                        fallback_shapes=fallback_shapes,
+                    ))
             except ValueError as e:
                 raise ValueError(f"Line {lineno}: {e}") from e
+            for w in caught:
+                if issubclass(w.category, ChordWarning):
+                    warnings.warn(f"Line {lineno}: {w.message}", ChordWarning)
+                else:
+                    warnings.warn_explicit(
+                        w.message, w.category, w.filename, w.lineno
+                    )
     return voicings
 
 
@@ -309,31 +339,65 @@ def parse_cli_args(
 
 
 def _fallback_voicing(
-    name: str, tuning: str, used: set[tuple[str, str]] | None
+    name: str,
+    frets: str,
+    voicing_tuning: str,
+    tuning: str,
+    chosen: dict[tuple[str, str], ChordVoicing] | None,
 ) -> list[ChordVoicing]:
     """Replace an explicit voicing written for another tuning.
 
-    Returns the easiest generated voicing not already used in place of an
-    earlier explicit line, so a file that pins several shapes for one chord
-    (e.g. two E voicings) doesn't print the same diagram twice.
+    Each pinned shape of a chord gets the easiest generated voicing not
+    already standing in for a different shape of that chord, so a file that
+    pins two E voicings doesn't print the same diagram twice, while a shape
+    repeated through a song (C 0003 in every verse) is always replaced the
+    same way.
+
+    Shapes that can't be replaced are kept as written (an empty list tells
+    the caller so): all-muted shapes, which are the same in every tuning,
+    and, with a ChordWarning, names that aren't chords ("N.C.", "My riff")
+    or chords with no playable voicing in the active tuning.
 
     Args:
         name: Chord name from the explicit line.
+        frets: The explicit shape.
+        voicing_tuning: Tuning the shape was written for.
         tuning: Active tuning.
-        used: (name, frets) pairs already used as replacements, updated in
-            place; None disables the check.
+        chosen: Replacements so far, keyed by (name, shape), updated in
+            place; None disables the bookkeeping.
 
     Returns:
-        A single-item list with the replacement voicing.
+        The replacement voicing in a single-item list, or [] to keep the
+        shape as written.
     """
-    options = _lookup_voicings(name, tuning=tuning)
-    for voicing in options:
-        key = (voicing.name, voicing.frets)
-        if used is None or key not in used:
-            if used is not None:
-                used.add(key)
-            return [voicing]
-    return options[:1]
+    if all(ch in "xX" for ch in frets):
+        return []
+    key = (name, frets.upper())
+    if chosen is not None and key in chosen:
+        return [chosen[key]]
+
+    try:
+        options = _lookup_voicings(name, tuning=tuning)
+    except ValueError:
+        try:
+            lookup_chord(name, tuning=tuning)
+            problem = f"'{name}' has no playable {tuning} voicing"
+        except ValueError:
+            problem = f"'{name}' isn't a chord name"
+        warnings.warn(
+            f"{problem}, so its {voicing_tuning} shape {frets} is printed "
+            f"as written",
+            ChordWarning,
+        )
+        return []
+
+    taken = {
+        v.frets for (other, _), v in (chosen or {}).items() if other == name
+    }
+    voicing = next((v for v in options if v.frets not in taken), options[0])
+    if chosen is not None:
+        chosen[key] = voicing
+    return [voicing]
 
 
 def _lookup_voicings(

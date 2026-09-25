@@ -11,10 +11,18 @@ from __future__ import annotations
 
 import argparse
 import sys
+import warnings
 
 from .chord_db import list_all_chords, lookup_chord
 from .fonts import missing_characters
-from .parser import parse_cli_args, parse_file, ChordVoicing, PAGE_BREAK, is_heading
+from .parser import (
+    ChordVoicing,
+    ChordWarning,
+    PAGE_BREAK,
+    is_heading,
+    parse_cli_args,
+    parse_file,
+)
 from .pdf_generator import generate_pdf
 from .tunings import TUNING_CHOICES, DEFAULT_TUNING, get_tuning
 
@@ -142,7 +150,13 @@ def main(argv: list[str] | None = None):
 
     for path in args.files:
         try:
-            voicings.extend(parse_file(path, single=args.single, tuning=args.tuning))
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always", ChordWarning)
+                voicings.extend(
+                    parse_file(path, single=args.single, tuning=args.tuning)
+                )
+            for w in caught:
+                print(f"Warning: {path}: {w.message}", file=sys.stderr)
         except FileNotFoundError:
             print(f"Error: File not found: {path}", file=sys.stderr)
             sys.exit(1)
@@ -161,7 +175,10 @@ def main(argv: list[str] | None = None):
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)
 
-    if not voicings:
+    chord_count = sum(
+        1 for v in voicings if v is not PAGE_BREAK and not is_heading(v)
+    )
+    if not chord_count:
         print("No chords specified. Use chord names, --file, or --list.")
         print("Run with --help for usage information.")
         sys.exit(1)
@@ -178,9 +195,6 @@ def main(argv: list[str] | None = None):
             show_root=args.show_root,
             no_fingers=args.no_fingers,
             tuning=args.tuning,
-        )
-        chord_count = sum(
-            1 for v in voicings if v is not PAGE_BREAK and not is_heading(v)
         )
         print(f"Generated {chord_count} chord diagram(s) -> {output}")
         missing = missing_characters()
