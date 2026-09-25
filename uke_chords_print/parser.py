@@ -17,6 +17,9 @@ Text file format (one chord per line):
   - C, 0003, fingers=___3, starting_fret=3  -> with starting fret
   - ---                         -> force a new page in the PDF
   - = Section Heading            -> section heading rendered in the PDF
+  - @tuning standard            -> explicit voicings below are written for
+                                   this tuning; they are regenerated from the
+                                   chord name when --tuning needs other shapes
   - # comment lines are ignored
   - blank lines are ignored
 """
@@ -26,6 +29,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .chord_db import lookup_chord
+from .tunings import get_tuning, shapes_compatible
 
 
 @dataclass
@@ -110,7 +114,10 @@ def parse_cli_arg(
 
 
 def parse_file_line(
-    line: str, single: bool = False, tuning: str = "standard"
+    line: str,
+    single: bool = False,
+    tuning: str = "standard",
+    voicing_tuning: str | None = None,
 ) -> list[ChordVoicing]:
     """
     Parse a single line from a text input file.
@@ -120,6 +127,9 @@ def parse_file_line(
       C, 0003                              -> explicit frets
       C, 0003, fingers=___3                -> with fingering
       C, 0003, fingers=___3, starting_fret=3  -> with starting fret
+
+    If voicing_tuning is set and its fret shapes don't match the active
+    tuning, explicit voicings are replaced by the primary generated voicing.
     """
     # Strip comments and whitespace
     line = line.strip()
@@ -151,6 +161,10 @@ def parse_file_line(
         raise ValueError(f"Invalid frets '{frets}' in line '{line}'. "
                          f"Expected 4 characters (digits or X).")
 
+    # Explicit shape written for a tuning with different fingerings
+    if voicing_tuning and not shapes_compatible(voicing_tuning, tuning):
+        return _lookup_voicings(name, single=True, tuning=tuning)
+
     kwargs = {}
     for extra in parts[2:]:
         key, _, val = extra.partition("=")
@@ -173,10 +187,18 @@ def parse_file(
 ) -> list[ChordVoicing]:
     """Parse an entire text file and return all chord voicings."""
     voicings = []
+    voicing_tuning = None
     with open(filepath, "r") as f:
         for lineno, line in enumerate(f, 1):
             try:
-                voicings.extend(parse_file_line(line, single=single, tuning=tuning))
+                # Tuning directive for the explicit voicings that follow
+                if line.strip().startswith("@tuning"):
+                    voicing_tuning = get_tuning(line.strip()[len("@tuning"):].strip()).name
+                    continue
+                voicings.extend(parse_file_line(
+                    line, single=single, tuning=tuning,
+                    voicing_tuning=voicing_tuning,
+                ))
             except ValueError as e:
                 raise ValueError(f"Line {lineno}: {e}") from e
     return voicings

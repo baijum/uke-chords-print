@@ -23,8 +23,8 @@ from reportlab.lib.colors import black, white, HexColor
 from .parser import ChordVoicing
 
 # --- Layout constants (all in mm, converted to points) ---
-# These define the geometry of a single chord diagram.
-# Sized for a 3-column x 4-row grid on A4 -- large and readable from a distance.
+# These define the geometry of a single chord diagram. pdf_generator scales
+# the whole drawing to fit each grid cell (4x4 on A4 by default).
 
 STRING_SPACING = 12 * mm      # horizontal distance between strings
 FRET_SPACING = 12 * mm        # vertical distance between frets

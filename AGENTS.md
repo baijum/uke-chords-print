@@ -84,28 +84,27 @@ Generator output is a dict; the parser converts it into `ChordVoicing`:
 
 ## Gotchas
 
-- **Explicit voicings in catalog files are standard-tuning shapes.** Lines like
-  `B7, 2322, fingers=1211, notes=...` in `catalog/*.txt` are used verbatim
-  regardless of `--tuning`, so they are wrong for baritone/low-G/D. Only bare
-  chord names are re-generated per tuning.
+- **Explicit voicings are tied to a tuning.** A line like
+  `B7, 2322, fingers=1211, ...` is a fret shape for one tuning. Files mark
+  this with an `@tuning <name>` line (the catalog uses `@tuning standard`);
+  when `--tuning` has different string pitch classes
+  (`tunings.shapes_compatible`), `parse_file` swaps each explicit line for the
+  primary generated voicing. Without `@tuning`, explicit lines are used
+  verbatim. Keep `@tuning` below the first line of catalog files —
+  `generate_catalog.sh` reads line 1 as the title.
 - **Scoring changes ripple into content.** `_score_voicing` and
   `_difficulty_label` thresholds decide which voicing is "primary"
   (`--single`) and which chords belong in `catalog/challenging_chords.txt`.
   Previous commits calibrated these against real playing; don't retune weights
   casually, and re-check the catalog output if you do.
-- **`generate_pdf` mutates its input** (`voicing.inversion` / `voicing.fingers`
-  are blanked for `--show-root` / `--no-fingers`). Copy first if you reuse the
-  list.
-- **Defaults differ by layer.** CLI defaults are A4, 4×4; `generate_pdf()`'s
-  own defaults are letter, 4×5. The `diagram.py` header comment about a
-  "3-column x 4-row grid" is stale.
 - **Tuning labels on diagrams** appear for every tuning whose name is not
-  `"standard"` (including low-G, which shows `G-C-E-A`).
+  `"standard"`, including low-G (which shows `G-C-E-A`) — this is how a low-G
+  sheet is told apart from a standard one.
 - **Inline comments in files** are stripped only when `#` follows a space
   (`" #"`), so sharps like `C#` / `F#` are safe. Heading (`= ...`) and page
   break (`---`) lines are recognised before comment stripping.
-- `__version__` in `__init__.py` (`1.0.0`) is not kept in sync with the git
-  release tags (`v0.x.0`).
+- `__version__` in `__init__.py` should match the latest `vX.Y.Z` release
+  tag; bump it when tagging a release.
 
 ## Common changes
 

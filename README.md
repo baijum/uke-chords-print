@@ -98,6 +98,7 @@ python3 -m uke_chords_print --file my_chords.txt -t "Practice Sheet"
 
 ```text
 # Comments start with #
+@tuning standard               # Explicit voicings below are for this tuning
 
 = Key of C                    # Section heading
 C                              # Chord name -> best voicings from generator
@@ -116,11 +117,13 @@ Em
 | Field | Required | Example | Description |
 |-------|----------|---------|-------------|
 | Chord name | Yes | `C`, `Am7` | Name shown above the diagram |
-| Frets | No | `0003` | 4-digit string (G-C-E-A fret numbers) |
+| Frets | No | `0003` | 4-character string, one fret per string in tuning order |
 | `fingers=` | No | `fingers=0003` | Finger to use (1-4, `0` = open) |
 | `notes=` | No | `notes=G C E C` | Note names shown below the fretboard |
 | `starting_fret=` | No | `starting_fret=5` | First fret shown on diagram |
 | `inversion=` | No | `inversion=Root` | Inversion label |
+
+The optional `@tuning <name>` line says which tuning the explicit voicings after it were written for. When you print with a `--tuning` whose shapes differ (e.g. `@tuning standard` printed with `--tuning baritone`), those lines are replaced by the easiest generated voicing for the chord name. Standard and low-G share shapes, so explicit voicings are kept between them. Without `@tuning`, explicit voicings are always used as written. The bundled catalog files declare `@tuning standard`.
 
 See [`example_chords.txt`](example_chords.txt) for a complete sample.
 

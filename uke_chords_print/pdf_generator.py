@@ -6,6 +6,8 @@ Supports US Letter and A4 page sizes with configurable grid dimensions.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.units import mm, inch
 from reportlab.pdfgen import canvas
@@ -39,9 +41,9 @@ def generate_pdf(
     voicings: list[ChordVoicing],
     output_path: str = "chords.pdf",
     title: str = "",
-    paper: str = "letter",
+    paper: str = "a4",
     cols: int = 4,
-    rows: int = 5,
+    rows: int = 4,
     show_root: bool = False,
     no_fingers: bool = False,
     tuning: str = "standard",
@@ -56,12 +58,14 @@ def generate_pdf(
         paper: Paper size ("letter" or "a4").
         cols: Number of columns per page.
         rows: Number of rows per page.
+        show_root: Show the "Root" inversion label.
+        no_fingers: Hide finger numbers inside the fret dots.
         tuning: Tuning name for string label display.
 
     Returns:
         The output file path.
     """
-    page_size = PAGE_SIZES.get(paper.lower(), letter)
+    page_size = PAGE_SIZES.get(paper.lower(), A4)
     page_width, page_height = page_size
 
     # Get string labels for non-standard tunings
@@ -178,11 +182,11 @@ def generate_pdf(
 
         # Hide "Root" inversion label unless --show-root is set
         if not show_root and voicing.inversion == "Root":
-            voicing.inversion = ""
+            voicing = replace(voicing, inversion="")
 
         # Hide finger numbers inside dots when --no-fingers is set
         if no_fingers:
-            voicing.fingers = ""
+            voicing = replace(voicing, fingers="")
 
         drawing = draw_chord_diagram(voicing, string_labels=string_labels)
 

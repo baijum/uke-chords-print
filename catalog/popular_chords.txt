@@ -2,6 +2,9 @@
 # =====================
 # The most widely used chords in western music: major, minor, and seventh.
 
+# Explicit voicings below are standard-tuning shapes
+@tuning standard
+
 = Major
 C
 D

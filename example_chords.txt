@@ -2,6 +2,9 @@
 # ===========================
 # Lines starting with # are comments.
 # Format: ChordName [, frets [, fingers=XXXX] [, starting_fret=N]]
+# "@tuning standard" marks explicit voicings as standard-tuning shapes, so
+# they are regenerated from the chord name for baritone or D tuning.
+@tuning standard
 
 # --- Essential Beginner Chords ---
 C

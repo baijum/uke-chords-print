@@ -6,6 +6,9 @@
 # popular_chords.txt instead, as they are widely used despite being hard.
 # Chords commented out were found easier than expected in practice.
 
+# Explicit voicings below are standard-tuning shapes
+@tuning standard
+
 = Hard
 B7, 2322, fingers=1211, notes=A D# F# B
 Bb7, 1211, fingers=1211, notes=Ab D F Bb

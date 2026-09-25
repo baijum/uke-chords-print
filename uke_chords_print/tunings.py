@@ -1,7 +1,7 @@
 """
 Ukulele tuning definitions.
 
-Supports standard (re-entrant high-G), low-G, and baritone tunings.
+Supports standard (re-entrant high-G), low-G, baritone, and D tunings.
 """
 
 from __future__ import annotations
@@ -77,6 +77,16 @@ def get_tuning(name: str) -> Tuning:
         valid = ", ".join(sorted(_ALIAS_TO_TUNING.keys()))
         raise ValueError(f"Unknown tuning '{name}'. Valid options: {valid}")
     return TUNINGS[canonical]
+
+
+def shapes_compatible(a: str, b: str) -> bool:
+    """Check whether fret shapes written for tuning a produce the same
+    chords on tuning b (same pitch class on every string, e.g. standard
+    and low-g)."""
+    return (
+        [m % 12 for m in get_tuning(a).midi_notes]
+        == [m % 12 for m in get_tuning(b).midi_notes]
+    )
 
 
 def get_tuning_midi(name: str) -> tuple[int, ...]:
