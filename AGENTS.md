@@ -11,12 +11,17 @@ diagrams. Voicings are **generated algorithmically** (pychord for theory +
 a brute-force fretboard search + a difficulty score). There is no static chord
 database, despite the `chord_db` module name.
 
-- Python 3.9+ (uses `from __future__ import annotations` for `list[...]` /
-  `X | None` hints — keep that import in every module).
-- Runtime deps: `reportlab`, `pychord` (see `requirements.txt`, unpinned).
+- Python 3.11+. Every module starts with `from __future__ import
+  annotations`; keep it for consistency.
+- Runtime deps: `reportlab` (unpinned) and `pychord>=1.4` (see
+  `requirements.txt`). 1.4 is the first release whose `set_quality` takes
+  interval names (`_EXTRA_QUALITIES`) and that spells notes the way the
+  catalog's `notes=` values do (E# in C#, Cb in Abm).
 - No `pyproject.toml`/`setup.py`: the tool is run as a module, not installed.
-- pytest suite in `tests/` (dev deps in `requirements-dev.txt`); no linter,
-  formatter config, or CI.
+- pytest suite in `tests/` (dev deps in `requirements-dev.txt`), run by
+  GitHub Actions (`.github/workflows/tests.yml`) on Python 3.11–3.14 for
+  every push and pull request, together with `./generate_catalog.sh`. No
+  linter or formatter config.
 
 ## Commands
 

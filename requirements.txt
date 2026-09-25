@@ -1,2 +1,2 @@
 reportlab
-pychord
+pychord>=1.4

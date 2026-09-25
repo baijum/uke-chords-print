@@ -267,9 +267,9 @@ Voicings use a **4-character string** representing each string from left to righ
 
 ## Requirements
 
-- Python 3.9+
+- Python 3.11+
 - [ReportLab](https://pypi.org/project/reportlab/) -- PDF generation
-- [pychord](https://pypi.org/project/pychord/) -- music theory (chord-to-notes resolution)
+- [pychord](https://pypi.org/project/pychord/) 1.4+ -- music theory (chord-to-notes resolution)
 
 ## Project Structure
 
@@ -322,6 +322,8 @@ The suite (about 9,000 tests, around 10 seconds) checks the generator against tw
 - **[chords-db](https://github.com/tombatossals/chords-db)**, 2,114 hand-compiled ukulele shapes, vendored at a pinned commit in `tests/data/chords-db/` (see its README for errata found in the data)
 
 It also covers properties of every generated voicing in all four tunings, parsing, PDF layout, font fallback, the CLI, and the catalog files. Known gaps are marked `xfail`; they pass once fixed and then fail, which is a reminder to remove the marker.
+
+[GitHub Actions](.github/workflows/tests.yml) runs the suite on Python 3.11–3.14 for every push and pull request, and builds every catalog PDF (downloadable from the run as the `catalog-pdfs` artifact).
 
 ## License
 
