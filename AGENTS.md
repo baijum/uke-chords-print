@@ -58,7 +58,7 @@ cli.py ──► parser.py ──► chord_db.py ──► voicing_gen.py ──
 | `cli.py` | argparse, collects voicings from each `--file` (repeatable, in order) then positional args, calls `generate_pdf`. |
 | `parser.py` | `ChordVoicing` dataclass; parses CLI args (`name:frets:key=val`) and file lines (`name, frets, key=val`); page-break / heading sentinels. |
 | `chord_db.py` | `lookup_chord()` wraps the generator and retries with enharmonic `CHORD_ALIASES`; `STANDARD_CHORDS` (12 roots × 9 qualities = 108) backs `--list`. |
-| `voicing_gen.py` | Chord → pitch classes → search frets 0–9 on 4 strings → filter (required chord tones present — 5+ note chords drop the 5th, then inner extensions; span ≤ 3) → score → top 3. Also finger assignment and inversion detection. |
+| `voicing_gen.py` | Chord → pitch classes → search frets 0–9 on 4 strings → filter (required chord tones present — 5+ note chords drop the 5th, natural 9th/11th, root, then altered tones; span ≤ 3) → score → top 3. Also finger assignment and inversion detection. |
 | `tunings.py` | `Tuning` dataclass + `TUNINGS` dict (MIDI notes per string, labels, aliases). `TUNING_CHOICES` feeds argparse. |
 | `pdf_generator.py` | `_paginate` splits voicings into pages of headings and rows (max `rows` rows per page, no empty pages), then draws them. Cell height reserves room for the title and the most headings on any page, so every page fits all its rows at one diagram size. |
 | `fonts.py` | Font fallback: splits text into runs; characters outside Windows-1252 (the built-in PDF fonts) use `bundled_fonts/` first, then system fonts (`fc-match` / known paths). `draw_centred` (canvas) and `centred_strings` (Drawing) render the runs; `missing_characters()` feeds the CLI warning. |
@@ -106,8 +106,9 @@ Generator output is a dict; the parser converts it into `ChordVoicing`:
   `generate_catalog.sh` reads line 1 as the title.
 - **Fingering** (`_finger_units` / `_assign_fingers`): a finger never lies
   across an open or lower-fretted string. The displayed fingering follows
-  common practice: barres across higher-fretted strings only when all four
-  strings are fretted (F# `3121`, but G `0232` -> `0132`), a lone fretted
+  common practice: an index barre across higher-fretted strings only when
+  all four strings are fretted (F# `3121`, but G `0232` -> `0132`; other
+  fingers never barre under a neighbour, Ab `1343` -> `1243`), a lone fretted
   string in open position uses the matching finger (C `0003` -> 3), else
   one finger per fret from the index on the lowest fret. The score's finger
   count uses the minimum (barres wherever possible). Pinned `fingers=` in
@@ -116,8 +117,10 @@ Generator output is a dict; the parser converts it into `ChordVoicing`:
 - **Scoring changes ripple into content.** `_score_voicing` and
   `_difficulty_label` thresholds decide which voicing is "primary"
   (`--single`) and which chords belong in `catalog/challenging_chords.txt`.
-  Previous commits calibrated these against real playing; don't retune weights
-  casually, and re-check the catalog output if you do.
+  The weights are calibrated so the primary voicing is the chords-db chart
+  shape for 163 of 180 common chords (guarded by the tests below); label
+  thresholds fit the tiers in `challenging_chords.txt`. Don't retune
+  casually; re-check the catalog output and its pinned shapes if you do.
 - **Tuning labels on diagrams** appear for every tuning whose name is not
   `"standard"`, including low-G (which shows `G-C-E-A`) — this is how a low-G
   sheet is told apart from a standard one.
@@ -129,9 +132,10 @@ Generator output is a dict; the parser converts it into `ChordVoicing`:
   which reads `/<number>` as an inversion: `6/9`, `7/9`, `7/13` are respelled
   (`A7/9` -> `A9`) and any other `/<number>` is rejected. Chord-chart
   spellings pychord lacks (`+`, `°`, `ø`, `Δ`, `m/maj7`, `min7`, `7(#9)`,
-  `♭`/`♯`, ...) are respelled by `_QUALITY_RULES`, which only run when
-  pychord rejects the quality as written, so pychord's own names never
-  change. `lookup_chord`
+  `maj7#5`, `♭`/`♯`, ...) are respelled by `_QUALITY_RULES`, which only run
+  when pychord rejects the quality as written, so pychord's own names never
+  change. Chord types pychord lacks entirely (`maj7b5`, `mM9`, ...) are
+  registered with it from `_EXTRA_QUALITIES` at import. `lookup_chord`
   re-raises the parse error so users see why a name failed.
 - **Slash chords** (`C/G`): the generator keeps only shapes whose lowest
   MIDI pitch is the bass when any exist, and labels inversions from the
@@ -195,7 +199,8 @@ README; don't "fix" the JSON.
 `pytest.ini` sets `xfail_strict`: known gaps are `xfail` with a reason, and
 fixing one makes its test fail until the marker is removed. Scoring
 changes show up in `test_canonical_shape_is_offered`,
-`test_canonical_shape_is_usually_primary` and
+`test_canonical_shape_is_usually_primary`,
+`test_canonical_shape_is_primary_in_every_key` and
 `test_beginner_chords_are_primary`; update their expectations only for
 a deliberate recalibration.
 

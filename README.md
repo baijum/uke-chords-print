@@ -151,9 +151,9 @@ The voicing generator supports **108 standard chords** (12 roots x 9 qualities),
 | **Suspended 2nd** | Dsus2 | Csus2 ... Bsus2 |
 | **Suspended 4th** | Gsus4 | Csus4 ... Bsus4 |
 
-Other chords pychord understands work too. Chords with more than four notes (9ths, 11ths, 13ths, `6/9`) drop the 5th first, then inner extensions, since a ukulele has only four strings -- e.g. `C9` is voiced as C-E-Bb-D and `C13` as C-E-Bb-A. Slash chords like `C/G` put the named bass note lowest when a playable shape allows it. Added-tone spellings `6/9`, `7/9`, `maj7/9` and `7/13` are read as `69`, `9`, `maj9` and `13`; other numbers after `/` are rejected rather than guessed.
+Other chords pychord understands work too. Chords with more than four notes (9ths, 11ths, 13ths, `6/9`) drop the 5th first, then the natural 9th/11th, then the root, since a ukulele has only four strings -- e.g. `C9` is voiced as C-E-Bb-D and `C13` as C-E-Bb-A. Altered tones that name the chord are kept over the root: `C9b5` is E-Gb-Bb-D, not a plain C9. Slash chords like `C/G` put the named bass note lowest when a playable shape allows it. Added-tone spellings `6/9`, `7/9`, `maj7/9` and `7/13` are read as `69`, `9`, `maj9` and `13`; other numbers after `/` are rejected rather than guessed.
 
-Common chord-chart spellings work too: `C+` (aug), `C°` / `Co` (dim), `C°7`, `Cø` (m7b5), `CΔ` / `CΔ7` (maj7), `CΔ9`, `Cma7`, `Cm/maj7` / `Cm(maj7)` / `CmΔ7` (minor-major 7th), `Cmin7` / `Cmi7` / `C-7`, `C7(#9)`, `C+7` / `Caug7` (7#5), `C7sus` (7sus4), and `♭` / `♯` accidentals (`B♭m7`). The diagram shows the name as you typed it.
+Common chord-chart spellings work too: `C+` (aug), `C°` / `Co` (dim), `C°7`, `Cø` (m7b5), `CΔ` / `CΔ7` (maj7), `CΔ9`, `Cma7`, `Cm/maj7` / `Cm(maj7)` / `CmΔ7` (minor-major 7th), `Cmin7` / `Cmi7` / `C-7`, `C7(#9)`, `C+7` / `Caug7` (7#5), `C+9` / `Caug9` (9#5), `Cmaj7#5`, `Cmaj7b5`, `Cm9b5`, `Cmaj11`, `Cm(maj9)` / `CmM9`, `CmM7b5`, `CmM11`, `C7#9b13`, `C13b5b9`, `C7sus` (7sus4), `Cmi`, and `♭` / `♯` accidentals (`B♭m7`). The diagram shows the name as you typed it.
 
 Enharmonic aliases are supported: `Db` = `C#`, `Gb` = `F#`, `Ab` = `G#`, `Bb` = `A#`, etc.
 
@@ -170,10 +170,12 @@ Every voicing is scored for playability using 7 factors derived from the [ISMIR 
 | Fret span | Distance between lowest and highest fretted note |
 | Barre complexity | Sustained pressure across consecutive strings |
 | Finger count | Number of fretted strings, and fingers needed (a barre counts once, but can't cross an open string) |
-| Fret position | Higher frets = tighter spacing |
-| Open strings | More open strings = easier |
+| Fret position | Higher frets = tighter spacing; leaving first position (above fret 4) costs extra |
+| Open strings | Easier in first position; harder with the hand up the neck, or when a finger must arch over one (Em `0402`) |
 | Finger independence | Large gaps between non-barre fingers |
 | Compact shape | Clustered frets are familiar and easier |
+
+The weights are calibrated against [chords-db](https://github.com/tombatossals/chords-db): for 163 of 180 common chords, the easiest voicing is the shape chord charts show first (C `0003`, Em `0432`, Fmaj7 `2413`, Cm7 `3333`, ...).
 
 Each voicing gets a label: **easy**, **moderate**, **hard**, or **very hard**. The generator returns voicings sorted easiest-first, so the primary voicing (`--single`) is always the most accessible.
 
@@ -303,7 +305,7 @@ The generator uses [pychord](https://github.com/yuma-m/pychord) for music theory
 
 1. **Resolve notes** -- `pychord.Chord("Am7").components()` returns `['A', 'C', 'E', 'G']`
 2. **Search fretboard** -- iterate valid fret combinations on all 4 strings (frets 0-9)
-3. **Filter** -- all notes must be chord tones, all required chord tones must be present (chords with 5+ notes omit the 5th, then inner extensions), fret span <= 3
+3. **Filter** -- all notes must be chord tones, all required chord tones must be present (chords with 5+ notes omit the 5th, then natural extensions, then the root), fret span <= 3
 4. **Score** -- rank by 7-factor difficulty heuristic
 5. **Return** -- top 3 voicings, easiest first
 

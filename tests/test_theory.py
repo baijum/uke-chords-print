@@ -22,11 +22,10 @@ from .support import (
     FORMULAS,
     PITCH_CLASS,
     ROOTS,
-    UNSUPPORTED_SUFFIXES,
     formula_pcs,
 )
 
-SUPPORTED = [s for s in FORMULAS if s not in UNSUPPORTED_SUFFIXES]
+SUPPORTED = list(FORMULAS)
 
 
 def _pcs(chord_name: str) -> set[int]:
@@ -54,12 +53,6 @@ def test_root_is_first_component(suffix, root):
     assert base == components
 
 
-@pytest.mark.xfail(strict=True, reason="spelling not recognised yet")
-@pytest.mark.parametrize("suffix", sorted(UNSUPPORTED_SUFFIXES))
-def test_unsupported_chord_types(suffix):
-    assert _pcs("C" + FORMULAS[suffix].quality) == formula_pcs("C", suffix)
-
-
 # Chord-chart spellings -> the name pychord knows for the same chord
 EQUIVALENT_SPELLINGS = [
     ("C+", "Caug"),
@@ -78,8 +71,7 @@ EQUIVALENT_SPELLINGS = [
     ("Cma9", "Cmaj9"),
     ("CM", "C"),
     ("Cmin", "Cm"),
-    pytest.param("Cmi", "Cm", marks=pytest.mark.xfail(
-        reason="_QUALITY_RULES only respells 'mi' before another character")),
+    ("Cmi", "Cm"),
     ("C-", "Cm"),
     ("Cmin7", "Cm7"),
     ("Cmi7", "Cm7"),
@@ -99,6 +91,21 @@ EQUIVALENT_SPELLINGS = [
     ("C+maj7", "Cmaj7+5"),
     ("Cmaj7+", "Cmaj7+5"),
     ("C7sus", "C7sus4"),
+    ("Cmaj7#5", "Cmaj7+5"),
+    ("CΔ7#5", "Cmaj7+5"),
+    ("Caug9", "C9+5"),
+    ("C+9", "C9+5"),
+    ("C9+", "C9+5"),
+    ("CM7b5", "Cmaj7b5"),
+    ("Cmaj7-5", "Cmaj7b5"),
+    ("CM11", "Cmaj11"),
+    ("Cm9-5", "Cm9b5"),
+    ("Cmmaj9", "CmM9"),
+    ("Cm(maj9)", "CmM9"),
+    ("CmΔ9", "CmM9"),
+    ("Cmmaj7b5", "CmM7b5"),
+    ("Cmmaj11", "CmM11"),
+    ("Cmi9", "Cm9"),
     ("B♭", "Bb"),
     ("B♭m7", "Bbm7"),
     ("F♯", "F#"),

@@ -44,33 +44,16 @@ def _explicit_lines(path):
             yield lineno, parts[0], frets, _parse_options(parts[2:])
 
 
-def _explicit_params(xfail: dict[tuple[str, int], str] | None = None):
-    params = []
-    for path in CATALOG_FILES:
-        for lineno, name, frets, opts in _explicit_lines(path):
-            reason = (xfail or {}).get((path.name, lineno))
-            marks = [pytest.mark.xfail(reason=reason)] if reason else []
-            params.append(pytest.param(
-                name, frets, opts, id=f"{path.name}:{lineno}:{name}",
-                marks=marks,
-            ))
-    return params
+def _explicit_params():
+    return [
+        pytest.param(name, frets, opts, id=f"{path.name}:{lineno}:{name}")
+        for path in CATALOG_FILES
+        for lineno, name, frets, opts in _explicit_lines(path)
+    ]
 
 
 EXPLICIT = _explicit_params()
 
-# Pinned notes= spelled differently from the chord (generated diagrams of
-# the same chord spell them as pychord does, e.g. E# in C#)
-MISSPELLED_NOTES = {
-    ("challenging_chords.txt", 18): "F for E#",
-    ("challenging_chords.txt", 32): "B for Cb",
-    ("challenging_chords.txt", 33): "B for Cb",
-    ("challenging_chords.txt", 43): "F for E#",
-    ("challenging_chords.txt", 45): "C, F for B#, E#",
-    ("challenging_chords.txt", 60): "F for E#",
-    ("popular_chords.txt", 11): "Ab for G# in E major",
-    ("popular_chords.txt", 12): "Ab for G# in E major",
-}
 
 
 def test_catalog_found():
@@ -132,8 +115,7 @@ def test_pinned_labels_match_the_shape(name, frets, opts):
         assert opts["inversion"] == inversion
 
 
-@pytest.mark.parametrize("name, frets, opts",
-                         _explicit_params(xfail=MISSPELLED_NOTES))
+@pytest.mark.parametrize("name, frets, opts", EXPLICIT)
 def test_pinned_notes_spelled_as_the_chord(name, frets, opts):
     if "notes" in opts:
         assert opts["notes"].split() == describe_voicing(name, frets)[0].split()

@@ -24,7 +24,6 @@ from .support import (
     FORMULAS,
     PITCH_CLASS,
     STANDARD_MIDI,
-    UNSUPPORTED_SUFFIXES,
     chords_db,
     chords_db_shapes,
     fingering_problems,
@@ -105,8 +104,9 @@ def test_generator_finds_every_textbook_shape(chord):
 
 
 def test_skipped_textbook_shapes_are_rootless_extended_chords():
-    """chords-db voices 5+ note chords without the root; the generator keeps
-    the root and drops the 5th instead. Nothing else is skipped."""
+    """chords-db voices 5+ note chords without the root (and 13b5b9 without
+    the 3rd); the generator drops the 5th and natural extensions first.
+    Nothing else is skipped."""
     skipped = 0
     for shape in usable_shapes():
         required = _required(shape.name)
@@ -114,61 +114,65 @@ def test_skipped_textbook_shapes_are_rootless_extended_chords():
             continue
         skipped += 1
         assert len(FORMULAS[shape.suffix].intervals) >= 5, shape.id
-        assert required - shape.pitch_classes == {PITCH_CLASS[shape.key]}, (
-            shape.id
-        )
+        root = PITCH_CLASS[shape.key]
+        missing = required - shape.pitch_classes
+        if shape.suffix == "13b5b9":
+            assert missing == {(root + 4) % 12}, shape.id
+        else:
+            assert missing == {root}, shape.id
     assert skipped > 0
 
 
-# The first shape chords-db lists for these types is the one chord charts
-# show; it should be among the generator's three voicings.
+# The first shape chords-db lists is the one chord charts show
 COMMON_SUFFIXES = [
     "major", "minor", "7", "m7", "maj7", "6", "m6", "dim7", "aug", "m7b5",
     "7sus4",
 ]
-# Where the generator offers a different, equally standard shape instead
-CANONICAL_EXCEPTIONS = {
-    ("Db", "minor"): "1104",  # chords-db 1444; 1104 is the other textbook C#m
-}
+CHART_SUFFIXES = COMMON_SUFFIXES + ["sus2", "sus4", "dim", "add9"]
 
 
 @pytest.mark.parametrize("suffix", COMMON_SUFFIXES)
 @pytest.mark.parametrize("key", list(chords_db()["keys"]))
 def test_canonical_shape_is_offered(key, suffix):
+    """The chart shape is among the generator's three voicings."""
     shape = next(
         s for s in ALL_SHAPES
         if s.key == key and s.suffix == suffix and s.position == 0
     )
     offered = [v["frets"] for v in generate_voicings(shape.name)]
-    expected = CANONICAL_EXCEPTIONS.get((key, suffix))
-    if expected:
-        assert offered[0] == expected
-        assert shape.fret_string not in offered
-    else:
-        assert shape.fret_string in offered
+    assert shape.fret_string in offered
 
 
-@pytest.mark.parametrize("suffix", ["major", "minor", "7"])
-def test_canonical_shape_is_usually_primary(suffix):
-    """The easiest shapes (C 0003, Am 2000, G7 0212...) come first for at
-    least 9 of 12 keys; a guard against scoring changes that reorder them."""
-    primary = 0
+def test_canonical_shape_is_usually_primary():
+    """The chart shape comes first for 163 of 180 common chords (sus2,
+    sus4 and dim charts disagree most). A guard against scoring changes;
+    raise the bar when a recalibration improves it."""
+    primary = sum(
+        generate_voicings(s.name)[0]["frets"] == s.fret_string
+        for s in ALL_SHAPES
+        if s.position == 0 and s.suffix in CHART_SUFFIXES
+    )
+    assert primary >= 163
+
+
+@pytest.mark.parametrize("suffix", ["major", "7", "m7", "6", "m6", "dim7",
+                                    "aug", "m7b5", "add9"])
+def test_canonical_shape_is_primary_in_every_key(suffix):
     for shape in ALL_SHAPES:
         if shape.suffix == suffix and shape.position == 0:
             voicings = generate_voicings(shape.name)
-            primary += voicings[0]["frets"] == shape.fret_string
-    assert primary >= 9
+            assert voicings[0]["frets"] == shape.fret_string, shape.id
 
 
 @pytest.mark.parametrize("name, frets", [
     ("C", "0003"), ("Am", "2000"), ("F", "2010"), ("G", "0232"),
     ("G7", "0212"), ("D", "2220"), ("Dm", "2210"), ("A", "2100"),
     ("C7", "0001"), ("Am7", "0000"), ("A7", "0100"), ("E7", "1202"),
-    ("Cmaj7", "0002"),
-    # The score prefers shapes with open strings high up the neck
-    pytest.param("Em", "0432", marks=pytest.mark.xfail(reason="primary 0402")),
-    pytest.param("Fmaj7", "2413", marks=pytest.mark.xfail(
-        reason="primary 5500")),
+    ("Cmaj7", "0002"), ("Em", "0432"), ("Fmaj7", "2413"), ("Dm7", "2213"),
+    ("Cm7", "3333"), ("Fm7", "1313"), ("Bb", "3211"), ("E", "1402"),
+    ("Bm", "4222"), ("B7", "2322"), ("D7", "2223"), ("Fm", "1013"),
+    ("Cm", "0333"), ("Gm", "0231"), ("Em7", "0202"), ("Gmaj7", "0222"),
+    ("Am6", "2423"),
 ])
 def test_beginner_chords_are_primary(name, frets):
     assert generate_voicings(name)[0]["frets"] == frets
@@ -178,7 +182,7 @@ def test_beginner_chords_are_primary(name, frets):
 
 @pytest.mark.parametrize("shape", [
     s for s in ALL_SHAPES
-    if s.suffix in FORMULAS and s.suffix not in UNSUPPORTED_SUFFIXES
+    if s.suffix in FORMULAS
 ], ids=lambda s: s.id)
 def test_describe_voicing_names_sounding_notes(shape):
     notes, inversion = describe_voicing(shape.name, shape.frets)

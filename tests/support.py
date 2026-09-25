@@ -104,13 +104,6 @@ FORMULAS: dict[str, Formula] = {
     "madd9": _f("madd9", 0, 3, 7, 2),
 }
 
-# Chord types whose spelling isn't recognised yet (pychord lacks them and
-# _QUALITY_RULES doesn't respell them)
-UNSUPPORTED_SUFFIXES = {
-    "aug9", "13b5b9", "b13#9", "maj7b5", "maj7#5", "maj11", "m9b5",
-    "mmaj7b5", "mmaj9", "mmaj11",
-}
-
 # chords-db entries whose notes don't match the chord (see the data README)
 CHORDS_DB_ERRATA = {
     ("B", "madd9", (2, 0, 0, 2)),
@@ -205,7 +198,7 @@ def usable_shapes(max_fret: int = 9, max_span: int = 3) -> list[Shape]:
     """chords-db shapes within the generator's search limits and spelling."""
     result = []
     for s in chords_db_shapes():
-        if s.suffix not in FORMULAS or s.suffix in UNSUPPORTED_SUFFIXES:
+        if s.suffix not in FORMULAS:
             continue
         fretted = [f for f in s.frets if f > 0]
         if min(s.frets) < 0 or (fretted and (

@@ -8,14 +8,14 @@
 = Major
 C
 D
-E, 4447, fingers=1114, notes=B E Ab E, starting_fret=4
-E, 1402, fingers=1302, notes=Ab E E B
+E, 4447, fingers=1114, notes=B E G# E, starting_fret=4
+E, 1402, fingers=1302, notes=G# E E B
 F
 G
 A
 B, 4322, fingers=3211, notes=B D# F# B
 B, 4322, fingers=4321, notes=B D# F# B
-Ab, 5046, fingers=2013, notes=C C Ab Eb, starting_fret=4
+Ab, 1343, fingers=1243, notes=Ab Eb Ab C
 Bb
 Eb, 0331, fingers=0231, notes=G Eb G Bb
 ---

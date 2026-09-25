@@ -12,7 +12,7 @@ import re
 from functools import lru_cache
 from itertools import product
 
-from pychord import Chord
+from pychord import Chord, QualityManager
 
 from .tunings import get_tuning_midi, DEFAULT_TUNING
 
@@ -42,19 +42,40 @@ _PC_TO_SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 # Common added-tone spellings that pychord would read as inversions
 _SLASH_EXTENSIONS = {"6/9": "69", "7/9": "9", "7/13": "13"}
 
+# Chord types pychord lacks, registered with it at import (intervals as
+# pychord writes them). Extended chords list only the tones players use.
+_EXTRA_QUALITIES: dict[str, tuple[str, ...]] = {
+    "maj7b5": ("1", "3", "b5", "7"),
+    "maj11": ("1", "3", "5", "7", "9", "11"),
+    "m9b5": ("1", "b3", "b5", "b7", "9"),
+    "mM7b5": ("1", "b3", "b5", "7"),
+    "mM9": ("1", "b3", "5", "7", "9"),
+    "mM11": ("1", "b3", "5", "7", "9", "11"),
+    "7#9b13": ("1", "3", "5", "b7", "#9", "b13"),
+    "13b5b9": ("1", "3", "b5", "b7", "b9", "13"),
+}
+_quality_manager = QualityManager()
+for _name, _intervals in _EXTRA_QUALITIES.items():
+    if _name not in _quality_manager.get_qualities():
+        _quality_manager.set_quality(_name, _intervals)
+
 # Chord-chart spellings pychord doesn't know, applied in order to a quality
 # (the part after the root, before any /bass) only if pychord rejects it
 _QUALITY_RULES: list[tuple[str, str]] = [
     (r"[()]", ""),                       # C7(#9) -> C7#9, Cm(maj7) -> Cmmaj7
-    (r"^(min|mi|-)(?=.)", "m"),          # Cmin7, Cmi7, C-7 -> Cm7
+    (r"^(min|mi|-)", "m"),               # Cmi, Cmin7, C-7 -> Cm, Cm7
     (r"ø7?", "m7b5"),                    # Cø, Cø7 -> Cm7b5
     (r"^[°o]", "dim"),                   # C°, Co7 -> Cdim, Cdim7
     (r"Δ(?!\d)", "maj7"),                # CΔ, CmΔ -> Cmaj7, Cmmaj7
     (r"Δ|Maj|ma(?=\d)", "maj"),          # CΔ9, CMaj7, Cma7 -> Cmaj9, Cmaj7
+    (r"^M(?=\d)", "maj"),                # CM7b5, CM11 -> Cmaj7b5, Cmaj11
+    (r"^mmaj(?=\d)", "mM"),              # Cmmaj9, Cm(maj9) -> CmM9
+    (r"(?<=\d)-5", "b5"),                # Cm9-5 -> Cm9b5
     (r"^M$", ""),                        # CM -> C
     (r"^\+$", "aug"),                    # C+ -> Caug
     (r"^(\+7|7\+|aug7|7aug)$", "7+5"),    # C+7, Caug7 -> C7+5
-    (r"^(\+maj7|maj7\+|maj7aug)$", "maj7+5"),
+    (r"^(\+9|9\+|aug9|9aug)$", "9+5"),    # C+9, Caug9 -> C9+5
+    (r"^(\+maj7|maj7\+|maj7aug|maj7#5)$", "maj7+5"),  # Cmaj7#5 -> Cmaj7+5
     (r"(?<=\d)sus$", "sus4"),            # C7sus -> C7sus4
 ]
 
@@ -73,10 +94,11 @@ def _finger_units(
     """Group fretted strings into units that one finger presses together.
 
     Adjacent strings at the same fret can always share a finger (flat
-    finger / barre). With allow_spanning, same-fret strings also share a
-    finger across strings fretted higher in between (the finger lies flat
-    under the others). A finger never covers an open or lower-fretted
-    string.
+    finger / barre). With allow_spanning, same-fret strings at the lowest
+    fret also share a finger across strings fretted higher in between (the
+    index lies flat under the others, F# 3121); higher fingers don't barre
+    under a neighbour (Ab 1343 -> 1243). A finger never covers an open or
+    lower-fretted string.
 
     Args:
         frets: Fret per string (0 = open).
@@ -86,12 +108,14 @@ def _finger_units(
         (fret, string indices) units, ordered by fret then string.
     """
     units: list[tuple[int, list[int]]] = []
-    for fret_val in sorted({f for f in frets if f > 0}):
+    fret_values = sorted({f for f in frets if f > 0})
+    for fret_val in fret_values:
         strings = [i for i, f in enumerate(frets) if f == fret_val]
+        spanning = allow_spanning and fret_val == fret_values[0]
         unit = [strings[0]]
         for s in strings[1:]:
             between = range(unit[-1] + 1, s)
-            if ((allow_spanning or not between)
+            if ((spanning or not between)
                     and all(frets[k] > fret_val for k in between)):
                 unit.append(s)
             else:
@@ -107,9 +131,9 @@ def _assign_fingers(frets: tuple[int, ...]) -> str:
     Uses a stretch-aware heuristic based on standard ukulele technique:
     - Open strings = 0
     - Adjacent strings at one fret share a finger (flat finger / barre).
-      A barre across higher-fretted strings is used only when every
+      An index barre across higher-fretted strings is used only when every
       string is fretted (F# 3121, B7 2322); otherwise those strings get
-      separate fingers (G 0232 -> 0132)
+      separate fingers (G 0232 -> 0132, Ab 1343 -> 1243)
     - A lone fretted string in open position uses the finger matching its
       fret (C 0003 -> ring finger); otherwise the index finger takes the
       lowest fret, one finger per fret from there (Em 0432 -> 0321)
@@ -174,8 +198,10 @@ def _required_pcs(
 
     A ukulele has four strings, so chords with more distinct notes (9ths,
     11ths, 13ths) drop tones the way players do: the perfect 5th first,
-    then inner extensions from the top down, and as a last resort the root
-    (a rootless voicing, e.g. A9/E where the bass is the 5th). The 3rd, 7th,
+    then natural inner extensions (9th, 11th) from the top down, then the
+    root (a rootless voicing, e.g. A9/E where the bass is the 5th), and
+    only then altered inner tones (b5, #5, b9), which give the chord its
+    name (C9b5 keeps the b5 rather than sound like C9). The 3rd, 7th,
     highest (naming) extension and a slash chord's bass are always kept.
 
     Args:
@@ -192,18 +218,20 @@ def _required_pcs(
     if len(tones) <= max_tones:
         return set(tones)
 
-    keep_intervals = {0, 3, 4, 10, 11}  # root, 3rds, 7ths
     top = tones[-1]
-    droppable = [
-        pc for pc in tones if (pc - root_pc) % 12 == 7 and pc != bass_pc
-    ]
-    droppable += [
-        pc for pc in reversed(tones)
-        if pc not in (top, bass_pc) and pc not in droppable
-        and (pc - root_pc) % 12 not in keep_intervals
-    ]
+
+    def inner(intervals: set[int]) -> list[int]:
+        """Inner tones with these intervals, from the top down."""
+        return [
+            pc for pc in reversed(tones)
+            if pc not in (top, bass_pc) and (pc - root_pc) % 12 in intervals
+        ]
+
+    droppable = inner({7})             # perfect 5th
+    droppable += inner({2, 5, 9})      # natural 9th, 11th, 13th
     if root_pc not in (top, bass_pc):
         droppable.append(root_pc)
+    droppable += inner({1, 6, 8})      # b9, b5/#11, #5/b13
 
     required = list(tones)
     for pc in droppable:
@@ -237,10 +265,18 @@ def _score_voicing(frets: tuple[int, ...]) -> float:
       1. Fret span          – wider stretch = harder hand position
       2. Barre complexity    – sustained pressure across strings
       3. Finger count        – more distinct finger positions = more coordination
-      4. Fret position       – higher frets = tighter spacing, less comfortable
-      5. Open string count   – more open strings = easier
+      4. Fret position       – higher frets = tighter spacing, less comfortable,
+                               and leaving first position (above fret 4) is
+                               a shift from the chords around it
+      5. Open strings        – easier in first position; with the hand up the
+                               neck (C 0066-style shapes) they are harder to
+                               keep ringing, and an open string between
+                               fretted ones needs arched fingers (Em 0402)
       6. Finger independence – non-barre fingers far apart = harder
       7. Compact shape       – clustered frets are familiar / easier
+
+    The weights were calibrated so the easiest voicing matches the shape
+    chord charts show first (chords-db, see tests/) for most common chords.
     """
     non_zero = [f for f in frets if f > 0]
     if not non_zero:
@@ -281,14 +317,25 @@ def _score_voicing(frets: tuple[int, ...]) -> float:
     # --- Compact shape: all fretted notes within 2 adjacent frets ---
     is_compact = 1.0 if fret_span <= 1 else 0.0
 
+    # --- Open strings: a help in first position, a hindrance higher up ---
+    first_position = max(non_zero) <= 4
+    open_weight = -1.5 if first_position else 1.5
+    fretted_strings = [i for i, f in enumerate(frets) if f > 0]
+    sandwiched_open = sum(
+        1 for i, f in enumerate(frets)
+        if f == 0 and fretted_strings[0] < i < fretted_strings[-1]
+    )
+
     score = (
         fret_span * 2.0             # wider stretch = harder
-        + num_fretted * 2.0         # more fingers needed
+        + num_fretted * 1.5         # more fingers needed
         + barre_count * 1.5         # barres require sustained pressure
-        + avg_fret * 1.0            # higher position = less comfortable
-        + finger_count * 1.0        # more distinct finger positions = harder
+        + avg_fret * 2.0            # higher position = less comfortable
+        + finger_count * 0.5        # more distinct finger positions = harder
         + independence_penalty      # large gaps between fingers
-        - num_open * 1.5            # open strings reduce difficulty
+        + num_open * open_weight    # open strings (see above)
+        + sandwiched_open * 4.0     # fingers arched over an open string
+        + (0.0 if first_position else 4.0)  # shift out of first position
         - is_compact * 2.0          # compact shapes are familiar
     )
     return max(score, 0.0)
@@ -298,9 +345,9 @@ def _difficulty_label(score: float) -> str:
     """Map a numeric difficulty score to a human-readable label."""
     if score <= 4:
         return "easy"
-    elif score <= 11:
+    elif score <= 10:
         return "moderate"
-    elif score <= 15:
+    elif score <= 16:
         return "hard"
     return "very hard"
 
@@ -315,8 +362,10 @@ def _pychord_name(chord_name: str) -> str:
 
     Common chord-chart spellings pychord doesn't know are respelled too:
     ♭/♯ -> b/#, "+" -> aug, "°"/"o" -> dim, "ø" -> m7b5, "Δ" -> maj7,
-    "m/maj7" and "m(maj7)" -> mM7, "min7"/"-7" -> m7, "7(#9)" -> 7#9,
-    "7sus" -> 7sus4 (see _QUALITY_RULES).
+    "m/maj7" and "m(maj7)" -> mM7, "mi"/"min7"/"-7" -> m/m7, "7(#9)" ->
+    7#9, "maj7#5" -> maj7+5, "aug9" -> 9+5, "7sus" -> 7sus4 (see
+    _QUALITY_RULES). Chord types pychord lacks entirely (maj7b5, maj11,
+    m9b5, mM9, ...) are registered from _EXTRA_QUALITIES.
 
     Args:
         chord_name: Chord name as written by the user.

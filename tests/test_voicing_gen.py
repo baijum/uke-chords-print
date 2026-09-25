@@ -237,6 +237,15 @@ class TestRequiredTones:
         ("C13", {"C", "E", "Bb", "A"}),        # 5th, 11th, 9th
         ("C9/G", {"G", "E", "Bb", "D"}),       # bass kept, root dropped
         ("A9/E", {"E", "C#", "G", "B"}),
+        # Altered tones name the chord: drop the root before them
+        ("C9b5", {"E", "Gb", "Bb", "D"}),
+        ("C9#5", {"E", "G#", "Bb", "D"}),
+        ("Cm9b5", {"Eb", "Gb", "Bb", "D"}),
+        ("C7b9#5", {"E", "G#", "Bb", "Db"}),
+        ("C7b9b13", {"E", "Bb", "Db", "Ab"}),
+        ("C13b9", {"E", "Bb", "Db", "A"}),
+        ("C7#9b13", {"E", "Bb", "D#", "Ab"}),
+        ("Cmaj11", {"C", "E", "B", "F"}),
     ])
     def test_tones_kept(self, chord, tones):
         assert self._required(chord) == tones
@@ -314,12 +323,32 @@ class TestDifficulty:
     def test_open_position_easier_than_barre(self):
         assert _score_voicing((0, 0, 0, 3)) < _score_voicing((5, 4, 3, 3))
 
+    def test_open_strings_help_only_in_first_position(self):
+        assert _score_voicing((0, 0, 0, 3)) < _score_voicing((2, 0, 0, 3))
+        assert _score_voicing((3, 3, 3, 3)) < _score_voicing((0, 0, 6, 6))
+
+    def test_open_string_between_fretted_ones_is_harder(self):
+        # Em: 0432 beats 0402, which needs fingers arched over the E string
+        assert _score_voicing((0, 4, 3, 2)) < _score_voicing((0, 4, 0, 2))
+
+    def test_leaving_first_position_is_harder(self):
+        assert _score_voicing((2, 4, 1, 3)) < _score_voicing((5, 5, 0, 0))
+
+    @pytest.mark.parametrize("frets, label", [
+        ("0003", "easy"), ("2000", "easy"), ("0232", "moderate"),
+        ("2010", "moderate"), ("0432", "hard"), ("3121", "hard"),
+        ("3211", "very hard"), ("4322", "very hard"), ("1114", "very hard"),
+    ])
+    def test_common_chord_labels(self, frets, label):
+        score = _score_voicing(tuple(int(c) for c in frets))
+        assert _difficulty_label(score) == label
+
     def test_wider_stretch_is_harder(self):
         assert _score_voicing((2, 2, 2, 2)) < _score_voicing((2, 2, 2, 5))
 
     @pytest.mark.parametrize("score, label", [
-        (0, "easy"), (4, "easy"), (4.1, "moderate"), (11, "moderate"),
-        (11.5, "hard"), (15, "hard"), (15.1, "very hard"),
+        (0, "easy"), (4, "easy"), (4.1, "moderate"), (10, "moderate"),
+        (10.5, "hard"), (16, "hard"), (16.1, "very hard"),
     ])
     def test_labels(self, score, label):
         assert _difficulty_label(score) == label

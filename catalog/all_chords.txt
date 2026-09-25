@@ -5,7 +5,7 @@
 # without it to show all voicings/inversions.
 
 # Explicit voicings below are standard-tuning shapes. Fm7 is pinned to the
-# common 1313 shape; the scoring would otherwise pick the 8th-fret barre.
+# common 1313 shape.
 @tuning standard
 
 = Major
