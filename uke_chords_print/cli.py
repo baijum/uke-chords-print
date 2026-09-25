@@ -39,7 +39,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--file", "-f",
-        help="Read chords from a text file",
+        action="append",
+        dest="files",
+        default=[],
+        help="Read chords from a text file (repeatable)",
     )
     parser.add_argument(
         "--output", "-o",
@@ -98,7 +101,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_TUNING,
         help=(
             "Ukulele tuning: standard (gcea, high-g), low-g (gcea-low, linear), "
-            "baritone (dgbe). Default: standard"
+            "baritone (dgbe), d-tuning (adf#b). Default: standard"
         ),
     )
 
@@ -136,14 +139,14 @@ def main(argv: list[str] | None = None):
     # Collect voicings from all sources
     voicings: list[ChordVoicing] = []
 
-    if args.file:
+    for path in args.files:
         try:
-            voicings.extend(parse_file(args.file, single=args.single, tuning=args.tuning))
+            voicings.extend(parse_file(path, single=args.single, tuning=args.tuning))
         except FileNotFoundError:
-            print(f"Error: File not found: {args.file}", file=sys.stderr)
+            print(f"Error: File not found: {path}", file=sys.stderr)
             sys.exit(1)
         except ValueError as e:
-            print(f"Error parsing file: {e}", file=sys.stderr)
+            print(f"Error parsing file {path}: {e}", file=sys.stderr)
             sys.exit(1)
 
     if args.chords:

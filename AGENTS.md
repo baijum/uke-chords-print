@@ -50,7 +50,7 @@ cli.py ──► parser.py ──► chord_db.py ──► voicing_gen.py ──
 
 | Module | Responsibility |
 |--------|----------------|
-| `cli.py` | argparse, collects voicings from `--file` then positional args, calls `generate_pdf`. |
+| `cli.py` | argparse, collects voicings from each `--file` (repeatable, in order) then positional args, calls `generate_pdf`. |
 | `parser.py` | `ChordVoicing` dataclass; parses CLI args (`name:frets:key=val`) and file lines (`name, frets, key=val`); page-break / heading sentinels. |
 | `chord_db.py` | `lookup_chord()` wraps the generator and retries with enharmonic `CHORD_ALIASES`; `STANDARD_CHORDS` (12 roots × 9 qualities = 108) backs `--list`. |
 | `voicing_gen.py` | Chord → pitch classes → search frets 0–9 on 4 strings → filter (all chord tones present, span ≤ 3) → score → top 3. Also finger assignment and inversion detection. |
@@ -101,10 +101,6 @@ Generator output is a dict; the parser converts it into `ChordVoicing`:
   "3-column x 4-row grid" is stale.
 - **Tuning labels on diagrams** appear for every tuning whose name is not
   `"standard"` (including low-G, which shows `G-C-E-A`).
-- **`--file` accepts one path only** (last one wins), even though
-  `catalog/README.md` says multiple `--file` flags can be combined.
-- **Docs lag the tuning list:** the `--tuning` help string in `cli.py` and the
-  README options table omit `d-tuning`. Update both when touching tunings.
 - **Inline comments in files** are stripped only when `#` follows a space
   (`" #"`), so sharps like `C#` / `F#` are safe. Heading (`= ...`) and page
   break (`---`) lines are recognised before comment stripping.

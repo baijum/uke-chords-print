@@ -37,7 +37,7 @@ python3 -m uke_chords_print [CHORDS...] [OPTIONS]
 | Option | Default | Description |
 |--------|---------|-------------|
 | `CHORDS` | | One or more chord names or `name:voicing` pairs |
-| `--file`, `-f` | | Read chords from a text file |
+| `--file`, `-f` | | Read chords from a text file (repeat to combine files) |
 | `--output`, `-o` | `chords.pdf` | Output PDF file path |
 | `--title`, `-t` | *(none)* | Title printed at the top of the first page |
 | `--paper` | `a4` | Paper size: `a4` or `letter` |
@@ -46,7 +46,7 @@ python3 -m uke_chords_print [CHORDS...] [OPTIONS]
 | `--single` | | Show only the primary (easiest) voicing per chord |
 | `--show-root` | | Show 'Root' inversion label (hidden by default) |
 | `--no-fingers` | | Hide finger numbers inside the fret dots |
-| `--tuning` | `standard` | Ukulele tuning: `standard`, `low-g`, or `baritone` |
+| `--tuning` | `standard` | Ukulele tuning: `standard`, `low-g`, `baritone`, or `d-tuning` |
 | `--list` | | List all 108 standard chords and exit |
 
 ### Examples
