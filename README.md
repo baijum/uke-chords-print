@@ -161,7 +161,7 @@ Every voicing is scored for playability using 7 factors derived from the [ISMIR 
 |--------|-----------------|
 | Fret span | Distance between lowest and highest fretted note |
 | Barre complexity | Sustained pressure across consecutive strings |
-| Finger count | Number of fretted strings |
+| Finger count | Number of fretted strings, and fingers needed (a barre counts once, but can't cross an open string) |
 | Fret position | Higher frets = tighter spacing |
 | Open strings | More open strings = easier |
 | Finger independence | Large gaps between non-barre fingers |

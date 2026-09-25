@@ -12,17 +12,17 @@
 = Hard
 B7, 2322, fingers=1211, notes=A D# F# B
 Bb7, 1211, fingers=1211, notes=Ab D F Bb
+Bbdim, 3404, fingers=1203, notes=Bb Fb Fb Db
 Bbmaj7, 3210, fingers=3210, notes=Bb D F A
-Bbsus2, 3013, fingers=3014, notes=Bb C F C
+Bbsus2, 3011, fingers=3011, notes=Bb C F Bb
 C#7, 1112, fingers=1112, notes=G# C# F B
-Cdim, 8089, fingers=1023, notes=Eb C C Gb, starting_fret=8
 D7, 2223, fingers=1112, notes=A D F# C
 Eb7, 3334, fingers=1112, notes=Bb Eb G Db
 Ebm7, 6666, fingers=1111, notes=Db Gb Bb Eb, starting_fret=6
 # Edim, 0401, fingers=0401, notes=G E E Bb
 Emaj7, 1302, fingers=1302, notes=G# D# E B
 # Fm, 1013, fingers=1013, notes=Ab C F C
-Fsus4, 3013, fingers=3014, notes=Bb C F C
+Fsus4, 3011, fingers=3011, notes=Bb C F Bb
 # Gdim, 0131, fingers=0131, notes=G Db G Bb
 # Gm, 0231, fingers=0231, notes=G D G Bb
 ---
@@ -38,13 +38,14 @@ Bbm, 3111, fingers=3111, notes=Bb Db F Bb
 Bbsus4, 3311, fingers=3311, notes=Bb Eb F Bb
 Bdim, 4212, fingers=4213, notes=B D F B
 Bmaj7, 3322, fingers=2211, notes=A# D# F# B
-Bsus2, 4124, fingers=3124, notes=B C# F# C#
+Bsus2, 4122, fingers=4122, notes=B C# F# B
 Bsus4, 4607, fingers=1304, notes=B F# E E, starting_fret=4
 C#, 1114, fingers=1114, notes=G# C# F C#
-C#m, 1404, fingers=1304, notes=G# E E C#
+C#m, 1104, fingers=1104, notes=G# C# E C#
 C#maj7, 1014, fingers=1024, notes=G# C F C#
 C#sus2, 1344, fingers=1344, notes=G# D# G# C#
 C#sus4, 1124, fingers=1124, notes=G# C# F# C#
+Cdim, 8089, fingers=1023, notes=Eb C C Gb, starting_fret=8
 Daug, 3221, fingers=3221, notes=A# D F# A#
 Ddim, 7545, fingers=4213, notes=D F Ab D, starting_fret=4
 Dmaj7, 2224, fingers=1113, notes=A D F# C#
@@ -58,6 +59,6 @@ F#7, 6667, fingers=1112, notes=C# F# A# E, starting_fret=6
 F#aug, 3221, fingers=3221, notes=A# C## F# A#
 F#maj7, 3524, fingers=2413, notes=A# F F# C#, starting_fret=2
 F#sus2, 1124, fingers=1124, notes=G# C# F# C#
-F#sus4, 4124, fingers=3124, notes=B C# F# C#
+F#sus4, 4122, fingers=4122, notes=B C# F# B
 Fdim, 4542, fingers=3431, notes=Cb F Ab Cb, starting_fret=2
 Fm7, 1313, fingers=1314, notes=Ab Eb F C

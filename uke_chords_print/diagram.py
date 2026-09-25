@@ -131,8 +131,11 @@ def draw_chord_diagram(
             if ch not in ("0", "X", "x"):
                 fret_label_x = fb_left + i * STRING_SPACING
                 break
-        # Draw fret number label above the fretboard
+        # Draw fret number label above the fretboard, kept inside the
+        # diagram when it starts over the last string (e.g. C 0007)
         fret_label = f"{starting_fret}fr"
+        label_width = stringWidth(fret_label, "Helvetica-Bold", FRET_NUM_SIZE)
+        fret_label_x = min(fret_label_x, DIAGRAM_WIDTH - 1 * mm - label_width)
         d.add(String(
             fret_label_x, fb_top + 2 * mm,
             fret_label,

@@ -95,10 +95,15 @@ Generator output is a dict; the parser converts it into `ChordVoicing`:
   (`_fallback_voicing`). Without `@tuning`, explicit lines are used
   verbatim. Keep `@tuning` below the first line of catalog files —
   `generate_catalog.sh` reads line 1 as the title.
-- **Fingering** (`_assign_fingers`): same-fret strings share one finger
-  only when every string between them is fretted higher — never across an
-  open or lower-fretted string. Keep pinned `fingers=` in the catalog
-  consistent with that rule.
+- **Fingering** (`_finger_units` / `_assign_fingers`): a finger never lies
+  across an open or lower-fretted string. The displayed fingering follows
+  common practice: barres across higher-fretted strings only when all four
+  strings are fretted (F# `3121`, but G `0232` -> `0132`), a lone fretted
+  string in open position uses the matching finger (C `0003` -> 3), else
+  one finger per fret from the index on the lowest fret. The score's finger
+  count uses the minimum (barres wherever possible). Pinned `fingers=` in
+  `challenging_chords.txt` mirror generator output; `popular_chords.txt`
+  has hand-picked ones.
 - **Scoring changes ripple into content.** `_score_voicing` and
   `_difficulty_label` thresholds decide which voicing is "primary"
   (`--single`) and which chords belong in `catalog/challenging_chords.txt`.

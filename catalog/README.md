@@ -61,4 +61,4 @@ Songs and styles from around the globe.
 - Each song section lists the unique chords used in that song. If multiple songs share the same chords, the duplicates still appear in the PDF -- useful context when practicing.
 - All chords are looked up from the built-in database, so every voicing includes finger positions, note names, and inversion labels.
 - Files can be combined: pass multiple `--file` flags or list chord names alongside a file.
-- `popular_chords.txt` and `challenging_chords.txt` pin some explicit voicings, marked `@tuning standard`. With `--tuning baritone` or `--tuning d-tuning`, those chords fall back to generated voicings for that tuning (distinct ones where a chord is pinned more than once).
+- `popular_chords.txt`, `challenging_chords.txt`, and `all_chords.txt` (Fm7 only) pin some explicit voicings, marked `@tuning standard`. With `--tuning baritone` or `--tuning d-tuning`, those chords fall back to generated voicings for that tuning (distinct ones where a chord is pinned more than once).

@@ -4,6 +4,10 @@
 # organized by type. Use with --single to show one voicing each, or
 # without it to show all voicings/inversions.
 
+# Explicit voicings below are standard-tuning shapes. Fm7 is pinned to the
+# common 1313 shape; the scoring would otherwise pick the 8th-fret barre.
+@tuning standard
+
 = Major
 C
 C#
@@ -67,7 +71,7 @@ C#m7
 Dm7
 Ebm7
 Em7
-Fm7
+Fm7, 1313, fingers=1314, notes=Ab Eb F C
 F#m7
 Gm7
 Abm7

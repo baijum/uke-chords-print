@@ -41,48 +41,80 @@ def _note_to_pc(name: str) -> int:
     return pc
 
 
+def _finger_units(
+    frets: tuple[int, ...], allow_spanning: bool
+) -> list[tuple[int, list[int]]]:
+    """Group fretted strings into units that one finger presses together.
+
+    Adjacent strings at the same fret can always share a finger (flat
+    finger / barre). With allow_spanning, same-fret strings also share a
+    finger across strings fretted higher in between (the finger lies flat
+    under the others). A finger never covers an open or lower-fretted
+    string.
+
+    Args:
+        frets: Fret per string (0 = open).
+        allow_spanning: Allow barres across higher-fretted strings.
+
+    Returns:
+        (fret, string indices) units, ordered by fret then string.
+    """
+    units: list[tuple[int, list[int]]] = []
+    for fret_val in sorted({f for f in frets if f > 0}):
+        strings = [i for i, f in enumerate(frets) if f == fret_val]
+        unit = [strings[0]]
+        for s in strings[1:]:
+            between = range(unit[-1] + 1, s)
+            if ((allow_spanning or not between)
+                    and all(frets[k] > fret_val for k in between)):
+                unit.append(s)
+            else:
+                units.append((fret_val, unit))
+                unit = [s]
+        units.append((fret_val, unit))
+    return units
+
+
 def _assign_fingers(frets: tuple[int, ...]) -> str:
     """Assign finger numbers to a fret combination.
 
     Uses a stretch-aware heuristic based on standard ukulele technique:
     - Open strings = 0
-    - Strings at the same fret share one finger (barre / flat finger) only
-      when every string between them is fretted higher; a finger can't
-      lie across a string that must ring open or sound a lower fret
-    - Finger number based on offset from lowest fret (one-finger-per-fret),
-      always increasing with fret and never above 4
+    - Adjacent strings at one fret share a finger (flat finger / barre).
+      A barre across higher-fretted strings is used only when every
+      string is fretted (F# 3121, B7 2322); otherwise those strings get
+      separate fingers (G 0232 -> 0132)
+    - A lone fretted string in open position uses the finger matching its
+      fret (C 0003 -> ring finger); otherwise the index finger takes the
+      lowest fret, one finger per fret from there (Em 0432 -> 0321)
+    - Fingers always increase with fret and never exceed 4
     """
-    if all(f == 0 for f in frets):
+    fretted = [f for f in frets if f > 0]
+    if not fretted:
         return "0" * len(frets)
 
     fingers = [0] * len(frets)
-    non_zero = [f for f in frets if f > 0]
-    min_fret = min(non_zero)
-
-    # Build finger units: strings at one fret that a single finger can
-    # cover together, in fret order (then string order).
-    finger_units: list[tuple[int, list[int]]] = []
-    for fret_val in sorted(set(non_zero)):
-        strings = [i for i, f in enumerate(frets) if f == fret_val]
-        unit = [strings[0]]
-        for s in strings[1:]:
-            if all(frets[k] > fret_val for k in range(unit[-1] + 1, s)):
-                unit.append(s)
-            else:
-                finger_units.append((fret_val, unit))
-                unit = [s]
-        finger_units.append((fret_val, unit))
+    finger_units = _finger_units(
+        frets, allow_spanning=len(fretted) == len(frets)
+    )
+    anchor = 1 if len(fretted) == 1 and fretted[0] <= 4 else min(fretted)
 
     # Assign fingers: stretch-aware, strictly increasing, and leaving
     # enough fingers (max 4) for the units still to come
     next_finger = 1
+    prev: tuple[int, int] | None = None  # (fret, finger) of previous unit
     for i, (fret_val, string_indices) in enumerate(finger_units):
-        target = fret_val - min_fret + 1
+        target = fret_val - anchor + 1
+        if prev is not None:
+            # Keep one finger per fret relative to the previous finger
+            # (Fm 1013 -> 1024, not 1023)
+            target = max(target, prev[1] + fret_val - prev[0])
         last_allowed = 4 - (len(finger_units) - 1 - i)
         fn = min(max(min(target, 4), next_finger), last_allowed)
         for s in string_indices:
             fingers[s] = fn
         next_finger = fn + 1
+        prev = (fret_val, fn)
 
     return "".join(str(f) for f in fingers)
 
@@ -175,7 +207,7 @@ def _score_voicing(frets: tuple[int, ...]) -> float:
     Seven factors are combined:
       1. Fret span          – wider stretch = harder hand position
       2. Barre complexity    – sustained pressure across strings
-      3. Finger count        – more distinct positions = more coordination
+      3. Finger count        – more distinct finger positions = more coordination
       4. Fret position       – higher frets = tighter spacing, less comfortable
       5. Open string count   – more open strings = easier
       6. Finger independence – non-barre fingers far apart = harder
@@ -202,6 +234,9 @@ def _score_voicing(frets: tuple[int, ...]) -> float:
     # --- Distinct finger positions (unique non-zero fret values) ---
     unique_frets = len(set(non_zero))
 
+    # --- Fingers needed: fewest units, with barres wherever possible ---
+    finger_count = len(_finger_units(frets, allow_spanning=True))
+
     # --- Finger independence: max gap between non-barre fingers ---
     # After removing barre frets, check if remaining fingers are spread
     independence_penalty = 0.0
@@ -222,7 +257,7 @@ def _score_voicing(frets: tuple[int, ...]) -> float:
         + num_fretted * 2.0         # more fingers needed
         + barre_count * 1.5         # barres require sustained pressure
         + avg_fret * 1.0            # higher position = less comfortable
-        + unique_frets * 1.0        # more distinct positions = harder
+        + finger_count * 1.0        # more distinct finger positions = harder
         + independence_penalty      # large gaps between fingers
         - num_open * 1.5            # open strings reduce difficulty
         - is_compact * 2.0          # compact shapes are familiar
