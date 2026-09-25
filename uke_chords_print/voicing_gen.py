@@ -9,6 +9,7 @@ combinations for playable voicings. Supports multiple tunings
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 from itertools import product
 
 from pychord import Chord
@@ -40,6 +41,22 @@ _PC_TO_SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
 # Common added-tone spellings that pychord would read as inversions
 _SLASH_EXTENSIONS = {"6/9": "69", "7/9": "9", "7/13": "13"}
+
+# Chord-chart spellings pychord doesn't know, applied in order to a quality
+# (the part after the root, before any /bass) only if pychord rejects it
+_QUALITY_RULES: list[tuple[str, str]] = [
+    (r"[()]", ""),                       # C7(#9) -> C7#9, Cm(maj7) -> Cmmaj7
+    (r"^(min|mi|-)(?=.)", "m"),          # Cmin7, Cmi7, C-7 -> Cm7
+    (r"ø7?", "m7b5"),                    # Cø, Cø7 -> Cm7b5
+    (r"^[°o]", "dim"),                   # C°, Co7 -> Cdim, Cdim7
+    (r"Δ(?!\d)", "maj7"),                # CΔ, CmΔ -> Cmaj7, Cmmaj7
+    (r"Δ|Maj|ma(?=\d)", "maj"),          # CΔ9, CMaj7, Cma7 -> Cmaj9, Cmaj7
+    (r"^M$", ""),                        # CM -> C
+    (r"^\+$", "aug"),                    # C+ -> Caug
+    (r"^(\+7|7\+|aug7|7aug)$", "7+5"),    # C+7, Caug7 -> C7+5
+    (r"^(\+maj7|maj7\+|maj7aug)$", "maj7+5"),
+    (r"(?<=\d)sus$", "sus4"),            # C7sus -> C7sus4
+]
 
 
 def _note_to_pc(name: str) -> int:
@@ -296,6 +313,11 @@ def _pychord_name(chord_name: str) -> str:
     "C69", "A7/9" -> "A9", "Cmaj7/9" -> "Cmaj9", "G7/13" -> "G13"); any
     other "/<number>" is rejected rather than drawn as the wrong chord.
 
+    Common chord-chart spellings pychord doesn't know are respelled too:
+    ♭/♯ -> b/#, "+" -> aug, "°"/"o" -> dim, "ø" -> m7b5, "Δ" -> maj7,
+    "m/maj7" and "m(maj7)" -> mM7, "min7"/"-7" -> m7, "7(#9)" -> 7#9,
+    "7sus" -> 7sus4 (see _QUALITY_RULES).
+
     Args:
         chord_name: Chord name as written by the user.
 
@@ -305,10 +327,13 @@ def _pychord_name(chord_name: str) -> str:
     Raises:
         ValueError: If the name has an unsupported "/<number>".
     """
+    name = chord_name.replace("♭", "b").replace("♯", "#")
+    # Minor-major seventh written with a slash, before slash parsing
+    name = re.sub(r"(m|min|mi|-)/(maj7|Maj7|ma7|M7|Δ7?)", "mM7", name)
     name = re.sub(
         r"(6/9|7/9|7/13)(?=/|$)",
         lambda m: _SLASH_EXTENSIONS[m.group(1)],
-        chord_name,
+        name,
     )
     if re.search(r"/\d", name):
         raise ValueError(
@@ -316,7 +341,26 @@ def _pychord_name(chord_name: str) -> str:
             f"supported. Write the extension in the name (e.g. C9, C7b9) "
             f"or use a bass note (e.g. C/E)"
         )
+
+    m = re.fullmatch(r"([A-G][#b]?)(.*?)(/[A-G][#b]?)?", name)
+    if m and not _known_quality(m.group(2)):
+        root, quality, bass = m.group(1), m.group(2), m.group(3) or ""
+        for pattern, repl in _QUALITY_RULES:
+            quality = re.sub(pattern, repl, quality)
+        # Keep the original if nothing matched, so errors name what was typed
+        if _known_quality(quality):
+            name = root + quality + bass
     return name
+
+
+@lru_cache(maxsize=None)
+def _known_quality(quality: str) -> bool:
+    """Check whether pychord understands a chord quality as written."""
+    try:
+        Chord("C" + quality)
+    except Exception:
+        return False
+    return True
 
 
 def _resolve_chord(

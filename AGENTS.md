@@ -122,7 +122,11 @@ Generator output is a dict; the parser converts it into `ChordVoicing`:
   `Track #1` are safe; `C #note` is not a comment.
 - **Chord names go through `voicing_gen._pychord_name`** before pychord,
   which reads `/<number>` as an inversion: `6/9`, `7/9`, `7/13` are respelled
-  (`A7/9` -> `A9`) and any other `/<number>` is rejected. `lookup_chord`
+  (`A7/9` -> `A9`) and any other `/<number>` is rejected. Chord-chart
+  spellings pychord lacks (`+`, `°`, `ø`, `Δ`, `m/maj7`, `min7`, `7(#9)`,
+  `♭`/`♯`, ...) are respelled by `_QUALITY_RULES`, which only run when
+  pychord rejects the quality as written, so pychord's own names never
+  change. `lookup_chord`
   re-raises the parse error so users see why a name failed.
 - **Slash chords** (`C/G`): the generator keeps only shapes whose lowest
   MIDI pitch is the bass when any exist, and labels inversions from the

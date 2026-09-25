@@ -153,6 +153,8 @@ The voicing generator supports **108 standard chords** (12 roots x 9 qualities),
 
 Other chords pychord understands work too. Chords with more than four notes (9ths, 11ths, 13ths, `6/9`) drop the 5th first, then inner extensions, since a ukulele has only four strings -- e.g. `C9` is voiced as C-E-Bb-D and `C13` as C-E-Bb-A. Slash chords like `C/G` put the named bass note lowest when a playable shape allows it. Added-tone spellings `6/9`, `7/9`, `maj7/9` and `7/13` are read as `69`, `9`, `maj9` and `13`; other numbers after `/` are rejected rather than guessed.
 
+Common chord-chart spellings work too: `C+` (aug), `C°` / `Co` (dim), `C°7`, `Cø` (m7b5), `CΔ` / `CΔ7` (maj7), `CΔ9`, `Cma7`, `Cm/maj7` / `Cm(maj7)` / `CmΔ7` (minor-major 7th), `Cmin7` / `Cmi7` / `C-7`, `C7(#9)`, `C+7` / `Caug7` (7#5), `C7sus` (7sus4), and `♭` / `♯` accidentals (`B♭m7`). The diagram shows the name as you typed it.
+
 Enharmonic aliases are supported: `Db` = `C#`, `Gb` = `F#`, `Ab` = `G#`, `Bb` = `A#`, etc.
 
 ```bash
