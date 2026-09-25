@@ -102,7 +102,8 @@ def test_files_in_order_then_args(run, tmp_path):
 
 
 @pytest.mark.parametrize("tuning", ["standard", "gcea", "low-g", "baritone",
-                                    "dgbe", "d-tuning"])
+                                    "dgbe", "d-tuning", "Baritone", "LOW-G",
+                                    "ADF#B"])
 def test_tunings(run, tuning):
     code, _, _, _ = run("C", "--tuning", tuning)
     assert code == 0

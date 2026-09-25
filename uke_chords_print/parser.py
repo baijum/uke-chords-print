@@ -159,9 +159,23 @@ def _explicit_voicing(
 
     Raises:
         ValueError: If the fretted notes don't fit the 4 frets a diagram
-            shows.
+            shows, a finger is given for an open or muted string, or notes
+            doesn't name one note per string.
     """
     fret_values = tuple(_parse_fret_value(ch) for ch in frets)
+    fingers = kwargs.get("fingers", "")
+    for i, (fret, finger) in enumerate(zip(fret_values, fingers)):
+        if fret <= 0 and finger not in "0_":
+            state = "open" if fret == 0 else "muted"
+            raise ValueError(
+                f"Finger {finger} is on string {i + 1}, which is {state} "
+                f"in '{frets}'. Use 0 or _ for strings without a finger."
+            )
+    if "notes" in kwargs and len(kwargs["notes"].split()) != len(frets):
+        raise ValueError(
+            f"notes= names {len(kwargs['notes'].split())} notes for "
+            f"{len(frets)} strings. Give one per string, - for a muted one."
+        )
     if "starting_fret" not in kwargs:
         kwargs["starting_fret"] = compute_starting_fret(fret_values)
 
@@ -279,6 +293,10 @@ def parse_file_line(
             return replacement
         # Kept as written: label it for the tuning it's printed in
         kwargs.pop("notes", None)
+        kwargs.pop("inversion", None)
+    elif voicing_tuning and voicing_tuning != get_tuning(tuning).name:
+        # Same shapes (standard / low-G) but a different lowest string, so
+        # an inversion pinned for one tuning can be wrong in the other
         kwargs.pop("inversion", None)
 
     return [_explicit_voicing(name, frets, kwargs, tuning)]

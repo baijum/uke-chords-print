@@ -383,9 +383,17 @@ def _pychord_name(chord_name: str) -> str:
         The name to pass to pychord.
 
     Raises:
-        ValueError: If the name has an unsupported "/<number>".
+        ValueError: If the name has an unsupported "/<number>" or a
+            lowercase root or bass note.
     """
     name = chord_name.replace("♭", "b").replace("♯", "#")
+    # Note names are capitalized; say so rather than "Invalid note a"
+    if re.match(r"[a-g]", name) or re.search(r"/[a-g]", name):
+        fixed = re.sub(r"(^|/)([a-g])", lambda m: m[1] + m[2].upper(), name)
+        raise ValueError(
+            f"Cannot parse chord '{chord_name}': note names are capital "
+            f"letters (did you mean '{fixed}'?)"
+        )
     # Minor-major seventh written with a slash, before slash parsing
     name = re.sub(r"(m|min|mi|-)/(maj7|Maj7|ma7|M7|Δ7?)", "mM7", name)
     name = re.sub(

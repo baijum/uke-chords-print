@@ -121,6 +121,16 @@ class TestFileLines:
         [v] = parse_file_line("C, 0003, inversion=Custom")
         assert (v.notes, v.inversion) == ("G C E C", "Custom")
 
+    def test_fretted_string_may_omit_its_finger(self):
+        [v] = parse_file_line("F, 2010, fingers=2_1_")
+        assert v.fingers == "2_1_"
+        [v] = parse_file_line("F, 2010, fingers=0010")
+        assert v.fingers == "0010"
+
+    def test_muted_string_note_placeholder(self):
+        [v] = parse_file_line("C, X003, notes=- C E C")
+        assert v.notes == "- C E C"
+
     def test_starting_fret_one_is_valid(self):
         [v] = parse_file_line("C, 0003, starting_fret=1")
         assert v.starting_fret == 1
@@ -173,6 +183,10 @@ class TestFileLines:
         ("C, 5433, starting_fret=4", "don't fit the 4 frets"),
         ("C, 1006", "don't fit the 4 frets"),
         ("C, 0005, starting_fret=1", "don't fit the 4 frets"),  # 1-4 shown
+        ("C, 0003, fingers=1003", "Finger 1 is on string 1, which is open"),
+        ("C, X003, fingers=1003", "Finger 1 is on string 1, which is muted"),
+        ("C, 0003, notes=C E G", "names 3 notes for 4 strings"),
+        ("C, 0003, notes=G C E C C", "names 5 notes for 4 strings"),
         ("C, 1000, starting_fret=2", "don't fit the 4 frets"),  # below
     ])
     def test_invalid_explicit_voicings(self, line, message):
@@ -372,6 +386,21 @@ class TestTuningDirective:
         [v] = parse_file_line("C, 0003", tuning="baritone",
                               voicing_tuning="standard")
         assert v.frets == generate_voicings("C", tuning="baritone")[0]["frets"]
+
+    def test_inversion_pinned_for_low_g_recomputed_for_standard(
+            self, chord_file):
+        # Same shape in both, but low-G's lowest note is the G string
+        path = chord_file(
+            "@tuning low-g\nC, 0003, notes=G C E C, inversion=2nd Inv\n")
+        [low_g] = parse_file(path, tuning="low-g")
+        [standard] = parse_file(path, tuning="standard")
+        assert (low_g.frets, low_g.inversion) == ("0003", "2nd Inv")
+        assert (standard.frets, standard.inversion) == ("0003", "Root")
+        assert standard.notes == "G C E C"  # notes are the same in both
+
+    def test_pinned_inversion_kept_for_its_own_tuning(self, chord_file):
+        path = chord_file("@tuning standard\nC, 0003, inversion=Custom\n")
+        assert parse_file(path, tuning="gcea")[0].inversion == "Custom"
 
     def test_alias_and_comment(self, chord_file):
         path = chord_file("@tuning gcea  # shapes below\nC, 0003\n")

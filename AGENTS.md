@@ -112,8 +112,11 @@ Generator output is a dict; the parser converts it into `ChordVoicing`:
   repeated shape. All-muted shapes, non-chord names and chords with no
   voicing in the tuning are kept as written; the last two issue a
   `ChordWarning`, which `parse_file` prefixes with the line number and
-  `cli.main` prints to stderr. Without `@tuning`, explicit lines are used
-  verbatim. Keep `@tuning` below the first line of catalog files —
+  `cli.main` prints to stderr. Between compatible tunings (standard /
+  low-G) explicit lines are kept, but a pinned `inversion=` is recomputed
+  because the lowest string differs. Without `@tuning`, explicit lines are
+  used verbatim. `_explicit_voicing` rejects a finger on an open or muted
+  string and `notes=` without one name per string. Keep `@tuning` below the first line of catalog files —
   `generate_catalog.sh` reads line 1 as the title.
 - **Fingering** (`_finger_units` / `_assign_fingers`): a finger never lies
   across an open or lower-fretted string. The displayed fingering follows

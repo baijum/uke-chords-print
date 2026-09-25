@@ -179,6 +179,17 @@ class TestRejectedNames:
         with pytest.raises(ValueError, match="Cannot parse chord"):
             _resolve_chord(name)
 
+    @pytest.mark.parametrize("name, suggestion", [
+        ("am", "Am"), ("bbm7", "Bbm7"), ("C/g", "C/G"), ("f#m/c#", "F#m/C#"),
+    ])
+    def test_lowercase_notes_get_a_suggestion(self, name, suggestion):
+        with pytest.raises(ValueError) as exc:
+            _resolve_chord(name)
+        assert str(exc.value) == (
+            f"Cannot parse chord '{name}': note names are capital letters "
+            f"(did you mean '{suggestion}'?)"
+        )
+
     def test_error_names_what_was_typed(self):
         # The o -> dim rule must not leak into the message ("dimmit3")
         with pytest.raises(ValueError) as exc:

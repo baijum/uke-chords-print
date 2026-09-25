@@ -30,6 +30,9 @@ from .support import (
 
 CATALOG_FILES = sorted(CATALOG_DIR.rglob("*.txt"))
 IDS = [str(p.relative_to(CATALOG_DIR)) for p in CATALOG_FILES]
+# Every shipped chord file, including the README's example
+SHEETS = CATALOG_FILES + [REPO_ROOT / "example_chords.txt"]
+SHEET_IDS = [str(p.relative_to(REPO_ROOT)) for p in SHEETS]
 
 
 def _explicit_lines(path):
@@ -47,7 +50,7 @@ def _explicit_lines(path):
 def _explicit_params():
     return [
         pytest.param(name, frets, opts, id=f"{path.name}:{lineno}:{name}")
-        for path in CATALOG_FILES
+        for path in SHEETS
         for lineno, name, frets, opts in _explicit_lines(path)
     ]
 
@@ -61,7 +64,7 @@ def test_catalog_found():
 
 
 @pytest.mark.parametrize("tuning", ALL_TUNINGS)
-@pytest.mark.parametrize("path", CATALOG_FILES, ids=IDS)
+@pytest.mark.parametrize("path", SHEETS, ids=SHEET_IDS)
 def test_parses_in_every_tuning(path, tuning):
     voicings = parse_file(str(path), single=True, tuning=tuning)
     chords = [v for v in voicings if v is not PAGE_BREAK and not is_heading(v)]
@@ -85,7 +88,7 @@ def test_listed_in_readme_and_script(path):
     assert f"catalog/{rel}" in script or glob in script
 
 
-@pytest.mark.parametrize("path", CATALOG_FILES, ids=IDS)
+@pytest.mark.parametrize("path", SHEETS, ids=SHEET_IDS)
 def test_pinned_shapes_declare_tuning(path):
     lines = path.read_text("utf-8").splitlines()
     if any(True for _ in _explicit_lines(path)):

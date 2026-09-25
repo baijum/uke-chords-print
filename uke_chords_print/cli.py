@@ -106,6 +106,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--tuning",
+        type=str.lower,  # like @tuning in files: Baritone == baritone
         choices=TUNING_CHOICES,
         default=DEFAULT_TUNING,
         help=(
