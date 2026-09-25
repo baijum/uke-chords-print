@@ -290,8 +290,11 @@ uke-chords-print/
     songs/               # Hit songs by difficulty
     classical/           # Classical music
     world/               # World music and folk traditions
+  tests/                 # pytest suite
+    data/chords-db/      # Reference chord shapes (chords-db, MIT)
   example_chords.txt     # Sample input file
   requirements.txt       # Python dependencies
+  requirements-dev.txt   # + pytest
 ```
 
 ## How the Voicing Generator Works
@@ -303,6 +306,20 @@ The generator uses [pychord](https://github.com/yuma-m/pychord) for music theory
 3. **Filter** -- all notes must be chord tones, all required chord tones must be present (chords with 5+ notes omit the 5th, then inner extensions), fret span <= 3
 4. **Score** -- rank by 7-factor difficulty heuristic
 5. **Return** -- top 3 voicings, easiest first
+
+## Development
+
+```bash
+pip install -r requirements-dev.txt
+python3 -m pytest
+```
+
+The suite (about 9,000 tests, around 10 seconds) checks the generator against two independent references:
+
+- **Interval formulas** for 46 chord types, written out by hand in `tests/support.py`
+- **[chords-db](https://github.com/tombatossals/chords-db)**, 2,114 hand-compiled ukulele shapes, vendored at a pinned commit in `tests/data/chords-db/` (see its README for errata found in the data)
+
+It also covers properties of every generated voicing in all four tunings, parsing, PDF layout, font fallback, the CLI, and the catalog files. Known gaps are marked `xfail`; they pass once fixed and then fail, which is a reminder to remove the marker.
 
 ## License
 

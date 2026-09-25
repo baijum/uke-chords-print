@@ -15,12 +15,17 @@ database, despite the `chord_db` module name.
   `X | None` hints — keep that import in every module).
 - Runtime deps: `reportlab`, `pychord` (see `requirements.txt`, unpinned).
 - No `pyproject.toml`/`setup.py`: the tool is run as a module, not installed.
-- No test suite, linter, formatter config, or CI.
+- pytest suite in `tests/` (dev deps in `requirements-dev.txt`); no linter,
+  formatter config, or CI.
 
 ## Commands
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
+
+# Run the tests (~10 s)
+python3 -m pytest
+python3 -m pytest tests/test_parser.py -k tuning   # a subset
 
 # Run the CLI
 python3 -m uke_chords_print C Am G7 F -t "Title" -o out.pdf
@@ -169,9 +174,34 @@ size centred text with `fit_font_size` so it can't spill into neighbouring
 cells at high `--cols`. Output
 must stay print-friendly (black/white plus the single dark-green dot color).
 
+## Tests
+
+`tests/support.py` holds the two references the generator is checked
+against: `FORMULAS` (hand-written interval formulas per chord type) and the
+vendored chords-db shapes (`tests/data/chords-db/`, pinned commit; refetch
+with its `fetch.py`, which checks the SHA-256). Data errors found there are
+listed in `CHORDS_DB_ERRATA` / `CHORDS_DB_FINGERING_ERRATA` and the data
+README; don't "fix" the JSON.
+
+| File | Covers |
+|------|--------|
+| `test_theory.py` | Name resolution vs formulas, alternative spellings, slash chords, rejected names |
+| `test_chords_db_reference.py` | Dataset integrity; the generator finds every chart shape it should; canonical shapes are offered; fingering and labels on all 2,114 shapes |
+| `test_voicing_gen.py` | Properties of every standard chord in every tuning; transposition between tunings (D = standard + 2, baritone = low-G − 5); helper unit tests |
+| `test_parser.py`, `test_chord_db.py` | Input formats, options, `@tuning`, lookup and aliases |
+| `test_rendering.py`, `test_fonts.py` | Pagination, PDF content (via `support.pdf_text`), diagram geometry, font fallback |
+| `test_cli.py`, `test_catalog.py` | End-to-end CLI; every catalog file in every tuning and its pinned shapes |
+
+`pytest.ini` sets `xfail_strict`: known gaps are `xfail` with a reason, and
+fixing one makes its test fail until the marker is removed. Scoring
+changes show up in `test_canonical_shape_is_offered`,
+`test_canonical_shape_is_usually_primary` and
+`test_beginner_chords_are_primary`; update their expectations only for
+a deliberate recalibration.
+
 ## Verifying changes
 
-There are no automated tests. Before finishing:
+Run `python3 -m pytest`, and add tests for new behavior. Then:
 
 1. Call `generate_voicings` / `lookup_chord` for a few chords across tunings
    (e.g. `C`, `F#m7`, `Bbdim`, `E` in `standard`, `low-g`, `baritone`) and

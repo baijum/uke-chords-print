@@ -1,0 +1,264 @@
+"""Parsing CLI arguments, chord files, options and directives."""
+
+from __future__ import annotations
+
+import pytest
+
+from uke_chords_print.parser import (
+    PAGE_BREAK,
+    ChordVoicing,
+    _strip_comment,
+    is_heading,
+    make_heading,
+    parse_cli_arg,
+    parse_cli_args,
+    parse_file,
+    parse_file_line,
+    validate_frets,
+)
+from uke_chords_print.voicing_gen import generate_voicings
+
+
+@pytest.fixture
+def chord_file(tmp_path):
+    """Write lines to a chord file and return its path."""
+    def write(text: str, encoding: str = "utf-8") -> str:
+        path = tmp_path / "chords.txt"
+        path.write_text(text, encoding=encoding)
+        return str(path)
+    return write
+
+
+class TestComments:
+    @pytest.mark.parametrize("line, expected", [
+        ("C  # comment", "C"),
+        ("C\t#", "C"),
+        ("C#", "C#"),
+        ("C#m7 # sharp chord", "C#m7"),
+        ("= Track #1", "= Track #1"),
+        ("C #note", "C #note"),
+        ("  Am  ", "Am"),
+        ("# whole line", "# whole line"),
+    ])
+    def test_strip_comment(self, line, expected):
+        assert _strip_comment(line) == expected
+
+    @pytest.mark.parametrize("line", ["", "   ", "# comment", "#", "\n"])
+    def test_ignored_lines(self, line):
+        assert parse_file_line(line) == []
+
+
+class TestFileLines:
+    def test_chord_name_gives_generated_voicings(self):
+        voicings = parse_file_line("Am")
+        assert [v.frets for v in voicings] == [
+            v["frets"] for v in generate_voicings("Am")
+        ]
+        assert all(v.name == "Am" for v in voicings)
+
+    def test_single(self):
+        assert len(parse_file_line("Am", single=True)) == 1
+
+    def test_page_break(self):
+        assert parse_file_line("---") == [PAGE_BREAK]
+        assert parse_file_line("---  # new page") == [PAGE_BREAK]
+
+    def test_heading(self):
+        [heading] = parse_file_line("= Verse  # comment")
+        assert is_heading(heading)
+        assert heading.notes == "Verse"
+
+    def test_explicit_voicing_fills_labels(self):
+        [v] = parse_file_line("C, 0003")
+        assert v == ChordVoicing(
+            name="C", frets="0003", notes="G C E C", inversion="Root",
+            starting_fret=1,
+        )
+
+    def test_explicit_options(self):
+        [v] = parse_file_line(
+            "Bb, 3211, fingers=3211, notes=x y z w, inversion=Custom"
+        )
+        assert v.fingers == "3211"
+        assert v.notes == "x y z w"
+        assert v.inversion == "Custom"
+
+    def test_trailing_comma_ignored(self):
+        [v] = parse_file_line("C, 0003, fingers=0003,")
+        assert v.fingers == "0003"
+
+    def test_muted_string(self):
+        [v] = parse_file_line("C, X003")
+        assert v.frets == "X003"
+        assert v.notes == "- C E C"
+
+    def test_starting_fret_derived(self):
+        [v] = parse_file_line("C, 5433")
+        assert v.starting_fret == 3
+
+    def test_starting_fret_given(self):
+        [v] = parse_file_line("C, 5433, starting_fret=2")
+        assert v.starting_fret == 2
+
+    def test_unknown_chord_name_draws_without_labels(self):
+        [v] = parse_file_line("Mystery chord, 0003")
+        assert v.notes == ""
+        assert v.inversion == ""
+
+    def test_labels_follow_tuning(self):
+        [v] = parse_file_line("G, 0003", tuning="baritone")
+        assert v.notes == "D G B G"
+
+    @pytest.mark.parametrize("line, message", [
+        ("C, 003", "Invalid frets"),
+        ("C, 00a3", "Invalid frets"),
+        ("C, 00003", "Invalid frets"),
+        ("C, 0003, fingers", "Expected key=value"),
+        ("C, 0003, finger=0003", "Unknown option 'finger'"),
+        ("C, 0003, fingers=003", "Invalid fingers"),
+        ("C, 0003, fingers=0005", "Invalid fingers"),
+        ("C, 0003, starting_fret=0", "Invalid starting_fret"),
+        ("C, 0003, starting_fret=x", "Invalid starting_fret"),
+        ("C, 0019", "don't fit the 4 frets"),
+        ("C, 5433, starting_fret=4", "don't fit the 4 frets"),
+        ("C, 1006", "don't fit the 4 frets"),
+    ])
+    def test_invalid_explicit_voicings(self, line, message):
+        with pytest.raises(ValueError, match=message):
+            parse_file_line(line)
+
+    def test_unknown_chord_lookup(self):
+        with pytest.raises(ValueError, match="Use --list"):
+            parse_file_line("Cxyz")
+
+    def test_unplayable_chord_lookup(self):
+        with pytest.raises(ValueError, match="No playable voicing"):
+            parse_file_line("Fmaj9", tuning="d-tuning")
+
+
+class TestCliArgs:
+    def test_name(self):
+        assert parse_cli_arg("G7", single=True)[0].frets == "0212"
+
+    def test_explicit(self):
+        [v] = parse_cli_arg("F:2010:fingers=2010")
+        assert (v.name, v.frets, v.fingers) == ("F", "2010", "2010")
+        assert v.notes == "A C F A"
+
+    def test_notes_option_with_spaces(self):
+        [v] = parse_cli_arg("C:0003:notes=G C E C")
+        assert v.notes == "G C E C"
+
+    def test_invalid_frets(self):
+        with pytest.raises(ValueError, match="Invalid frets"):
+            parse_cli_arg("C:03")
+
+    def test_bad_option(self):
+        with pytest.raises(ValueError, match="Unknown option"):
+            parse_cli_arg("C:0003:finger=0003")
+
+    def test_many(self):
+        voicings = parse_cli_args(["C", "G:0232"], single=True)
+        assert [v.frets for v in voicings] == ["0003", "0232"]
+
+    def test_tuning(self):
+        [v] = parse_cli_arg("G", single=True, tuning="baritone")
+        assert v.frets == "0003"
+
+
+class TestParseFile:
+    def test_mixed_content(self, chord_file):
+        path = chord_file(
+            "# Title\n"
+            "= Intro\n"
+            "C\n"
+            "G, 0232, fingers=0132  # pinned\n"
+            "---\n"
+            "\n"
+            "Am7\n"
+        )
+        voicings = parse_file(path, single=True)
+        assert [v.name for v in voicings] == [
+            "__HEADING__", "C", "G", "__PAGE_BREAK__", "Am7",
+        ]
+        assert voicings[3] is PAGE_BREAK
+
+    def test_byte_order_mark(self, chord_file):
+        path = chord_file("C\n", encoding="utf-8-sig")
+        assert parse_file(path, single=True)[0].name == "C"
+
+    def test_utf8_heading(self, chord_file):
+        path = chord_file("= Première partie ♪\nC\n")
+        assert parse_file(path, single=True)[0].notes == "Première partie ♪"
+
+    def test_error_has_line_number(self, chord_file):
+        path = chord_file("C\nG\nC, 12\n")
+        with pytest.raises(ValueError, match=r"^Line 3: Invalid frets"):
+            parse_file(path)
+
+    def test_missing_file(self, tmp_path):
+        with pytest.raises(FileNotFoundError):
+            parse_file(str(tmp_path / "nope.txt"))
+
+
+class TestTuningDirective:
+    FILE = (
+        "@tuning standard\n"
+        "E, 1402, fingers=1403\n"
+        "E, 4442, fingers=2341\n"
+        "C, 0003\n"
+    )
+
+    def test_compatible_tuning_keeps_explicit_shapes(self, chord_file):
+        voicings = parse_file(chord_file(self.FILE), tuning="low-g")
+        assert [v.frets for v in voicings] == ["1402", "4442", "0003"]
+        assert voicings[0].fingers == "1403"
+
+    def test_other_tuning_regenerates_distinct_shapes(self, chord_file):
+        voicings = parse_file(chord_file(self.FILE), tuning="baritone")
+        expected_e = [v["frets"] for v in generate_voicings(
+            "E", tuning="baritone")]
+        assert [v.frets for v in voicings[:2]] == expected_e[:2]
+        assert voicings[2].frets == generate_voicings(
+            "C", tuning="baritone")[0]["frets"]
+        assert all(v.name in ("E", "C") for v in voicings)
+
+    def test_directive_applies_to_lines_below(self, chord_file):
+        path = chord_file("C, 0003\n@tuning standard\nC, 0003\n")
+        voicings = parse_file(path, tuning="baritone")
+        assert voicings[0].frets == "0003"
+        assert voicings[1].frets == generate_voicings(
+            "C", tuning="baritone")[0]["frets"]
+
+    def test_alias_and_comment(self, chord_file):
+        path = chord_file("@tuning gcea  # shapes below\nC, 0003\n")
+        assert parse_file(path, tuning="d-tuning")[0].frets != "0003"
+
+    def test_options_checked_under_any_tuning(self, chord_file):
+        path = chord_file("@tuning standard\nC, 0003, finger=3\n")
+        with pytest.raises(ValueError, match="Line 2: Unknown option"):
+            parse_file(path, tuning="baritone")
+
+    @pytest.mark.parametrize("line, message", [
+        ("@tuning", "Expected '@tuning <name>'"),
+        ("@tuning standard low-g", "Expected '@tuning <name>'"),
+        ("@tuning banjo", "Unknown tuning"),
+    ])
+    def test_bad_directive(self, chord_file, line, message):
+        with pytest.raises(ValueError, match=f"Line 1: {message}"):
+            parse_file(chord_file(line + "\n"))
+
+
+class TestHelpers:
+    @pytest.mark.parametrize("frets, ok", [
+        ("0003", True), ("X003", True), ("xx00", True), ("9999", True),
+        ("003", False), ("00003", False), ("00-3", False), ("", False),
+    ])
+    def test_validate_frets(self, frets, ok):
+        assert validate_frets(frets) is ok
+
+    def test_heading_sentinel(self):
+        heading = make_heading("Chorus")
+        assert is_heading(heading)
+        assert not is_heading(ChordVoicing(name="C", frets="0003"))
+        assert not is_heading(PAGE_BREAK)
