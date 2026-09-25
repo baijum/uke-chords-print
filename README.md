@@ -198,7 +198,7 @@ A ready-to-use collection of chord sheets lives in [`catalog/`](catalog/):
 
 | Category | Files |
 |----------|-------|
-| **Reference** | [Popular chords](catalog/popular_chords.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.3.0/popular_chords.pdf)), [All 108 chords](catalog/all_chords.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.3.0/all_chords.pdf)), [Challenging chords](catalog/challenging_chords.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.3.0/challenging_chords.pdf)) |
+| **Reference** | [Popular chords](catalog/popular_chords.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.5.0/popular_chords.pdf)), [All 108 chords](catalog/all_chords.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.5.0/all_chords.pdf)), [Challenging chords](catalog/challenging_chords.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.5.0/challenging_chords.pdf)) |
 | **Progressions** | [Pop anthems](catalog/progressions/pop_anthems.txt), [12-bar blues](catalog/progressions/12_bar_blues.txt), [Jazz essentials](catalog/progressions/jazz_essentials.txt), [Classic rock](catalog/progressions/classic_rock.txt), [50s doo-wop](catalog/progressions/50s_doo_wop.txt) |
 | **Songs** | [Beginner hits](catalog/songs/beginner_hits.txt), [Pop classics](catalog/songs/pop_classics.txt), [Campfire songs](catalog/songs/campfire_songs.txt) |
 | **Classical** | [Ode to Joy, Pachelbel Canon, Amazing Grace, Greensleeves...](catalog/classical/classical_pieces.txt) |
@@ -209,7 +209,7 @@ python3 -m uke_chords_print --file catalog/songs/beginner_hits.txt \
   --single -t "Beginner Hits"
 ```
 
-See the full list in the [Catalog README](catalog/README.md).
+See the full list in the [Catalog README](catalog/README.md). PDFs of every sheet are attached to the [v0.5.0 release](https://github.com/baijum/uke-chords-print/releases/tag/v0.5.0).
 
 ## Tunings
 
