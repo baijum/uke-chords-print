@@ -125,6 +125,8 @@ Em
 
 The optional `@tuning <name>` line says which tuning the explicit voicings after it were written for. When you print with a `--tuning` whose shapes differ (e.g. `@tuning standard` printed with `--tuning baritone`), those lines are replaced by the easiest generated voicing for the chord name. Standard and low-G share shapes, so explicit voicings are kept between them. Without `@tuning`, explicit voicings are always used as written. The bundled catalog files declare `@tuning standard`.
 
+Inline comments start with whitespace, then `#`, then whitespace (as in the example above). This keeps sharps like `C#` and heading text like `= Track #1` intact.
+
 See [`example_chords.txt`](example_chords.txt) for a complete sample.
 
 ## Chord Database
@@ -143,7 +145,7 @@ The voicing generator supports **108 standard chords** (12 roots x 9 qualities),
 | **Suspended 2nd** | Dsus2 | Csus2 ... Bsus2 |
 | **Suspended 4th** | Gsus4 | Csus4 ... Bsus4 |
 
-Other chords pychord understands work too. Chords with more than four notes (9ths, 11ths, 13ths, `6/9`) drop the 5th first, then inner extensions, since a ukulele has only four strings -- e.g. `C9` is voiced as C-E-Bb-D and `C13` as C-E-Bb-A.
+Other chords pychord understands work too. Chords with more than four notes (9ths, 11ths, 13ths, `6/9`) drop the 5th first, then inner extensions, since a ukulele has only four strings -- e.g. `C9` is voiced as C-E-Bb-D and `C13` as C-E-Bb-A. Slash chords like `C/G` put the named bass note lowest when a playable shape allows it.
 
 Enharmonic aliases are supported: `Db` = `C#`, `Gb` = `F#`, `Ab` = `G#`, `Bb` = `A#`, etc.
 

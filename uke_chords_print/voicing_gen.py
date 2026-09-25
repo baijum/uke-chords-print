@@ -3,7 +3,7 @@ Algorithmic ukulele chord voicing generator.
 
 Uses pychord for chord-to-notes resolution and searches all fret
 combinations for playable voicings. Supports multiple tunings
-(standard, low-g, baritone).
+(standard, low-g, baritone, d-tuning).
 """
 
 from __future__ import annotations
@@ -101,19 +101,23 @@ def _detect_inversion(
 
 
 def _required_pcs(
-    component_pcs: list[int], root_pc: int, max_tones: int = 4
+    component_pcs: list[int],
+    root_pc: int,
+    max_tones: int = 4,
+    bass_pc: int | None = None,
 ) -> set[int]:
     """Choose the chord tones every voicing must contain.
 
     A ukulele has four strings, so chords with more distinct notes (9ths,
     11ths, 13ths) drop tones the way players do: the perfect 5th first,
     then inner extensions from the top down. The root, 3rd, 7th and the
-    highest (naming) extension are always kept.
+    highest (naming) extension are always kept, as is a slash chord's bass.
 
     Args:
         component_pcs: Chord tone pitch classes in pychord order.
         root_pc: Pitch class of the chord root.
         max_tones: Number of strings available.
+        bass_pc: Pitch class of a slash chord's bass note, if any.
 
     Returns:
         Set of pitch classes a voicing must include. Has more than
@@ -125,10 +129,12 @@ def _required_pcs(
 
     keep_intervals = {0, 3, 4, 10, 11}  # root, 3rds, 7ths
     top = tones[-1]
-    droppable = [pc for pc in tones if (pc - root_pc) % 12 == 7]
+    droppable = [
+        pc for pc in tones if (pc - root_pc) % 12 == 7 and pc != bass_pc
+    ]
     droppable += [
         pc for pc in reversed(tones)
-        if pc != top and pc not in droppable
+        if pc not in (top, bass_pc) and pc not in droppable
         and (pc - root_pc) % 12 not in keep_intervals
     ]
 
@@ -243,7 +249,9 @@ def generate_voicings(
     all fret combinations on the 4 ukulele strings for voicings where
     every note is a chord tone and all required chord tones are present.
     Chords with more than four distinct notes omit the 5th (and, if
-    needed, inner extensions); see _required_pcs.
+    needed, inner extensions); see _required_pcs. For slash chords
+    (e.g. "C/G"), shapes with the named bass as the lowest-pitched note
+    are returned when any exist; otherwise the bass is not enforced.
 
     Args:
         chord_name: Chord name (e.g., "Am7", "C", "F#dim").
@@ -265,12 +273,22 @@ def generate_voicings(
         chord = Chord(chord_name)
         components = chord.components()
         root = chord.root
+        bass = chord.on
+        # A slash chord's inversion is named from the chord above the bass
+        base_components = (
+            Chord(chord_name[:chord_name.rindex("/")]).components()
+            if bass else components
+        )
     except Exception as e:
         raise ValueError(f"Cannot parse chord '{chord_name}': {e}") from e
 
     component_pcs = [_note_to_pc(n) for n in components]
     target_pcs = set(component_pcs)
-    required_pcs = _required_pcs(component_pcs, _note_to_pc(root))
+    base_pcs = [_note_to_pc(n) for n in base_components]
+    bass_pc = _note_to_pc(bass) if bass else None
+    required_pcs = _required_pcs(
+        component_pcs, _note_to_pc(root), bass_pc=bass_pc
+    )
     pc_to_name = {_note_to_pc(n): n for n in components}
 
     # Precompute valid frets per string (only those producing a chord tone)
@@ -283,7 +301,7 @@ def generate_voicings(
         ]
         valid_frets_per_string.append(valid)
 
-    scored: list[tuple[float, dict]] = []
+    scored: list[tuple[float, dict, bool]] = []
 
     for frets in product(*valid_frets_per_string):
         midi_notes = tuple(tuning_midi[i] + frets[i] for i in range(4))
@@ -302,7 +320,8 @@ def generate_voicings(
         fret_str = "".join(str(f) for f in frets)
         fingers = _assign_fingers(frets)
         note_names = " ".join(pc_to_name[pc] for pc in pcs)
-        inversion = _detect_inversion(component_pcs, midi_notes)
+        inversion = _detect_inversion(base_pcs, midi_notes)
+        has_bass = bass_pc is None or min(midi_notes) % 12 == bass_pc
         starting_fret = compute_starting_fret(frets)
 
         score = _score_voicing(frets)
@@ -317,7 +336,11 @@ def generate_voicings(
         if starting_fret > 1:
             voicing["starting_fret"] = starting_fret
 
-        scored.append((score, voicing))
+        scored.append((score, voicing, has_bass))
+
+    # Slash chords: prefer shapes with the named bass lowest, if any exist
+    if any(has_bass for _, _, has_bass in scored):
+        scored = [s for s in scored if s[2]]
 
     scored.sort(key=lambda x: x[0])
-    return [v for _, v in scored[:max_results]]
+    return [v for _, v, _ in scored[:max_results]]

@@ -21,12 +21,14 @@ Text file format (one chord per line):
   - @tuning standard            -> explicit voicings below are written for
                                    this tuning; they are regenerated from the
                                    chord name when --tuning needs other shapes
-  - # comment lines are ignored
+  - # comment lines are ignored; an inline comment is whitespace, "#",
+    then whitespace or end of line (so "C#" and "= Track #1" are kept)
   - blank lines are ignored
 """
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from .chord_db import lookup_chord
@@ -43,6 +45,15 @@ class ChordVoicing:
     notes: str = ""     # e.g., "G C E C"
     inversion: str = ""  # e.g., "Root", "1st Inv"
     starting_fret: int = 1
+
+
+# Inline comment: whitespace, "#", then whitespace or end of line.
+_INLINE_COMMENT = re.compile(r"\s+#(\s.*)?$")
+
+
+def _strip_comment(line: str) -> str:
+    """Remove surrounding whitespace and any inline comment from a line."""
+    return _INLINE_COMMENT.sub("", line.strip()).strip()
 
 
 # Sentinel object used to signal a page break in the voicings list.
@@ -164,7 +175,7 @@ def parse_file_line(
     tuning, explicit voicings are replaced by the primary generated voicing.
     """
     # Strip comments and whitespace
-    line = line.strip()
+    line = _strip_comment(line)
     if not line or line.startswith("#"):
         return []
 
@@ -175,10 +186,6 @@ def parse_file_line(
     # Section heading
     if line.startswith("= "):
         return [make_heading(line[2:].strip())]
-
-    # Remove inline comments
-    if " #" in line:
-        line = line[:line.index(" #")].strip()
 
     parts = [p.strip() for p in line.split(",")]
     name = parts[0]
@@ -224,8 +231,11 @@ def parse_file(
         for lineno, line in enumerate(f, 1):
             try:
                 # Tuning directive for the explicit voicings that follow
-                if line.strip().startswith("@tuning"):
-                    voicing_tuning = get_tuning(line.strip()[len("@tuning"):].strip()).name
+                directive = _strip_comment(line).split()
+                if directive and directive[0] == "@tuning":
+                    if len(directive) != 2:
+                        raise ValueError("Expected '@tuning <name>'")
+                    voicing_tuning = get_tuning(directive[1]).name
                     continue
                 voicings.extend(parse_file_line(
                     line, single=single, tuning=tuning,

@@ -2,7 +2,7 @@
 Draw a single ukulele chord diagram using ReportLab drawing primitives.
 
 The diagram looks like a miniature fretboard:
-  - 4 vertical lines (strings: G C E A)
+  - 4 vertical lines (strings, in tuning order)
   - Horizontal lines (frets)
   - A thick top line for the nut (open position) or a fret number label
   - Filled circles for fretted positions
@@ -29,7 +29,7 @@ from .parser import ChordVoicing
 STRING_SPACING = 12 * mm      # horizontal distance between strings
 FRET_SPACING = 12 * mm        # vertical distance between frets
 NUM_FRETS = 4                 # frets shown on the diagram
-NUM_STRINGS = 4               # G C E A
+NUM_STRINGS = 4               # strings, in tuning order
 
 FRETBOARD_WIDTH = STRING_SPACING * (NUM_STRINGS - 1)   # 36mm
 FRETBOARD_HEIGHT = FRET_SPACING * NUM_FRETS             # 48mm
@@ -72,7 +72,8 @@ def draw_chord_diagram(
     Args:
         voicing: The chord voicing to render.
         string_labels: Optional tuple of string labels (e.g., ("D", "G", "B", "E")
-            for baritone). If provided, renders labels above the nut/fretboard.
+            for baritone). If provided, they are appended to the frets line
+            below the diagram (e.g., "0 - 0 - 0 - 3  (D-G-B-E)").
 
     Returns a Drawing object of size DIAGRAM_WIDTH x DIAGRAM_HEIGHT.
     """

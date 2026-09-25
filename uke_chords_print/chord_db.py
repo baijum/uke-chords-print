@@ -2,14 +2,15 @@
 Ukulele chord database.
 
 Generates chord voicings algorithmically using pychord for music theory
-and a fretboard search. Supports multiple tunings (standard, low-g, baritone).
+and a fretboard search. Supports multiple tunings (standard, low-g,
+baritone, d-tuning).
 
 Each voicing dict contains:
-  - frets: 4-character string, each char is the fret number for G-C-E-A
-           (0 = open, X = muted)
+  - frets: 4-character string, one fret number per string in tuning order
+           (e.g. G-C-E-A for standard; 0 = open, X = muted)
   - fingers: 4-character string (1=index, 2=middle, 3=ring, 4=pinky,
              0=open/not used)
-  - notes: space-separated note names (G-C-E-A string order)
+  - notes: space-separated note names in string order
   - inversion: "Root", "1st Inv", "2nd Inv", "3rd Inv", or ""
   - starting_fret: int, 1 means open position (default)
 """

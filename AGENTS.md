@@ -102,9 +102,13 @@ Generator output is a dict; the parser converts it into `ChordVoicing`:
 - **Tuning labels on diagrams** appear for every tuning whose name is not
   `"standard"`, including low-G (which shows `G-C-E-A`) — this is how a low-G
   sheet is told apart from a standard one.
-- **Inline comments in files** are stripped only when `#` follows a space
-  (`" #"`), so sharps like `C#` / `F#` are safe. Heading (`= ...`) and page
-  break (`---`) lines are recognised before comment stripping.
+- **Inline comments in files** (`parser._strip_comment`) are whitespace +
+  `#` + whitespace/end of line, applied to every line kind (chords,
+  headings, `---`, `@tuning`). Sharps like `C#` and heading text like
+  `Track #1` are safe; `C #note` is not a comment.
+- **Slash chords** (`C/G`): the generator keeps only shapes whose lowest
+  MIDI pitch is the bass when any exist, and labels inversions from the
+  chord above the bass (pychord puts the bass first in `components()`).
 - `__version__` in `__init__.py` should match the latest `vX.Y.Z` release
   tag; bump it when tagging a release.
 
