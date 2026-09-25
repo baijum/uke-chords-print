@@ -67,21 +67,28 @@ INVERSION_SIZE = 14
 LABEL_MAX_WIDTH = 2 * (PAD_RIGHT + FRETBOARD_WIDTH / 2) - 2 * mm
 
 
-def _fit_font_size(text: str, font_name: str, font_size: float) -> float:
-    """Shrink font_size if needed so text fits within LABEL_MAX_WIDTH.
+def fit_font_size(
+    text: str,
+    font_name: str,
+    font_size: float,
+    max_width: float = LABEL_MAX_WIDTH,
+) -> float:
+    """Shrink font_size if needed so text fits within max_width.
 
     Args:
         text: The label text.
         font_name: ReportLab font name.
         font_size: Preferred font size in points.
+        max_width: Widest the text may be, in points (default: a label
+            centred inside the diagram).
 
     Returns:
         font_size, or a smaller size at which the text fits.
     """
     width = stringWidth(text, font_name, font_size)
-    if width <= LABEL_MAX_WIDTH:
+    if width <= max_width:
         return font_size
-    return font_size * LABEL_MAX_WIDTH / width
+    return font_size * max_width / width
 
 
 def draw_chord_diagram(
@@ -236,7 +243,7 @@ def draw_chord_diagram(
         fb_left + FRETBOARD_WIDTH / 2,
         DIAGRAM_HEIGHT - 4 * mm,
         voicing.name,
-        fontSize=_fit_font_size(voicing.name, "Helvetica-Bold", CHORD_NAME_SIZE),
+        fontSize=fit_font_size(voicing.name, "Helvetica-Bold", CHORD_NAME_SIZE),
         fillColor=LABEL_COLOR,
         textAnchor="middle",
         fontName="Helvetica-Bold",
@@ -267,7 +274,7 @@ def draw_chord_diagram(
         fb_left + FRETBOARD_WIDTH / 2,
         fb_bottom - 11 * mm,
         frets_display,
-        fontSize=_fit_font_size(frets_display, "Courier-Bold", FRETS_DISPLAY_SIZE),
+        fontSize=fit_font_size(frets_display, "Courier-Bold", FRETS_DISPLAY_SIZE),
         fillColor=HexColor("#333333"),
         textAnchor="middle",
         fontName="Courier-Bold",

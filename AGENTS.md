@@ -133,10 +133,9 @@ Tunings table / options table in `README.md`.
 `main()` into `parse_file`/`parse_cli_args` or `generate_pdf`, and add a row
 to the README options table.
 
-**Add a file-format key:** handle it in `parser.parse_file_line` (and
-`parse_cli_arg` if it should work on the command line — currently the CLI form
-only supports `fingers` and `starting_fret`), then document it in the README
-file-format table.
+**Add a file-format key:** add it to `parser._OPTION_KEYS` and handle it in
+`parser._parse_options` (shared by file lines and CLI args; unknown keys are
+errors), then document it in the README file-format table.
 
 **Add a catalog sheet:** create a `.txt` under the relevant `catalog/`
 subdirectory. The first line must be `# <Title>` — `generate_catalog.sh` uses
@@ -146,7 +145,7 @@ the globbed directories, to the loop in `generate_catalog.sh`.
 **Change diagram appearance:** edit the constants at the top of `diagram.py`.
 Everything is drawn in a fixed `DIAGRAM_WIDTH × DIAGRAM_HEIGHT` box that
 `pdf_generator` scales, so keep new elements inside the padding areas;
-size centred text with `_fit_font_size` so it can't spill into neighbouring
+size centred text with `fit_font_size` so it can't spill into neighbouring
 cells at high `--cols`. Output
 must stay print-friendly (black/white plus the single dark-green dot color).
 

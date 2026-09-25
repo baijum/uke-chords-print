@@ -14,7 +14,9 @@ from reportlab.pdfgen import canvas
 from reportlab.graphics import renderPDF
 
 from .parser import ChordVoicing, PAGE_BREAK, is_heading
-from .diagram import draw_chord_diagram, DIAGRAM_WIDTH, DIAGRAM_HEIGHT
+from .diagram import (
+    draw_chord_diagram, fit_font_size, DIAGRAM_WIDTH, DIAGRAM_HEIGHT,
+)
 from .tunings import get_tuning
 
 # Page margins
@@ -172,7 +174,10 @@ def generate_pdf(
         # y is the top of the next heading or row
         y = page_height - MARGIN_TOP
         if title and page_num == 0:
-            c.setFont("Helvetica-Bold", TITLE_FONT_SIZE)
+            # Long titles shrink to fit between the side margins
+            c.setFont("Helvetica-Bold", fit_font_size(
+                title, "Helvetica-Bold", TITLE_FONT_SIZE, usable_width
+            ))
             c.drawCentredString(
                 page_width / 2, y - 0.75 * TITLE_FONT_SIZE, title
             )
@@ -189,7 +194,10 @@ def generate_pdf(
         for entry in page:
             # Section heading -- full-width line, compact height
             if not isinstance(entry, list):
-                c.setFont("Helvetica-Bold", HEADING_FONT_SIZE)
+                c.setFont("Helvetica-Bold", fit_font_size(
+                    entry.notes, "Helvetica-Bold", HEADING_FONT_SIZE,
+                    usable_width,
+                ))
                 c.drawCentredString(
                     page_width / 2,
                     y - HEADING_HEIGHT + 2 * mm,

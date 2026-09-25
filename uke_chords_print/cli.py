@@ -145,6 +145,10 @@ def main(argv: list[str] | None = None):
         except FileNotFoundError:
             print(f"Error: File not found: {path}", file=sys.stderr)
             sys.exit(1)
+        except OSError as e:
+            # e.g. a directory or a file without read permission
+            print(f"Error: Cannot read {path}: {e.strerror}", file=sys.stderr)
+            sys.exit(1)
         except ValueError as e:
             print(f"Error parsing file {path}: {e}", file=sys.stderr)
             sys.exit(1)

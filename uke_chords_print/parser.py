@@ -89,6 +89,56 @@ def validate_frets(frets: str) -> bool:
     return True
 
 
+_OPTION_KEYS = ("fingers", "starting_fret", "notes", "inversion")
+
+
+def _parse_options(extras: list[str]) -> dict:
+    """Parse key=value options that follow an explicit voicing's frets.
+
+    Args:
+        extras: Option strings, e.g. ["fingers=___3", "starting_fret=3"].
+            Empty strings (from a trailing separator) are ignored.
+
+    Returns:
+        ChordVoicing keyword arguments.
+
+    Raises:
+        ValueError: On a missing "=", an unknown key, a fingers value that
+            isn't 4 characters of 0-4 or "_", or a non-numeric or < 1
+            starting_fret.
+    """
+    kwargs: dict = {}
+    for extra in extras:
+        if not extra.strip():
+            continue
+        key, sep, val = extra.partition("=")
+        key = key.strip()
+        val = val.strip()
+        if not sep:
+            raise ValueError(f"Expected key=value, got '{extra.strip()}'")
+        if key not in _OPTION_KEYS:
+            raise ValueError(
+                f"Unknown option '{key}'. "
+                f"Valid options: {', '.join(_OPTION_KEYS)}"
+            )
+        if key == "fingers":
+            if len(val) != 4 or any(ch not in "01234_" for ch in val):
+                raise ValueError(
+                    f"Invalid fingers '{val}'. Expected 4 characters, "
+                    f"each 1-4 or 0/_ for no finger."
+                )
+            kwargs["fingers"] = val
+        elif key == "starting_fret":
+            if not val.isdigit() or int(val) < 1:
+                raise ValueError(
+                    f"Invalid starting_fret '{val}'. Expected a number >= 1."
+                )
+            kwargs["starting_fret"] = int(val)
+        else:
+            kwargs[key] = val
+    return kwargs
+
+
 def _explicit_voicing(name: str, frets: str, kwargs: dict) -> ChordVoicing:
     """Build an explicit voicing, deriving starting_fret when not given.
 
@@ -129,6 +179,7 @@ def parse_cli_arg(
       "C"                       -> database lookup
       "C:0003"                  -> explicit
       "C:0003:fingers=___3"     -> explicit with fingering
+      "C:0003:fingers=___3:notes=G C E C" -> any option from _parse_options
     """
     parts = arg.split(":")
     name = parts[0].strip()
@@ -143,16 +194,7 @@ def parse_cli_arg(
         raise ValueError(f"Invalid frets '{frets}' in argument '{arg}'. "
                          f"Expected 4 characters (digits or X).")
 
-    kwargs = {}
-    for extra in parts[2:]:
-        key, _, val = extra.partition("=")
-        key = key.strip()
-        val = val.strip()
-        if key == "fingers":
-            kwargs["fingers"] = val
-        elif key == "starting_fret":
-            kwargs["starting_fret"] = int(val)
-
+    kwargs = _parse_options(parts[2:])
     return [_explicit_voicing(name, frets, kwargs)]
 
 
@@ -202,23 +244,12 @@ def parse_file_line(
         raise ValueError(f"Invalid frets '{frets}' in line '{line}'. "
                          f"Expected 4 characters (digits or X).")
 
+    # Parse options first so typos are reported under any --tuning
+    kwargs = _parse_options(parts[2:])
+
     # Explicit shape written for a tuning with different fingerings
     if voicing_tuning and not shapes_compatible(voicing_tuning, tuning):
         return _fallback_voicing(name, tuning, fallback_used)
-
-    kwargs = {}
-    for extra in parts[2:]:
-        key, _, val = extra.partition("=")
-        key = key.strip()
-        val = val.strip()
-        if key == "fingers":
-            kwargs["fingers"] = val
-        elif key == "starting_fret":
-            kwargs["starting_fret"] = int(val)
-        elif key == "notes":
-            kwargs["notes"] = val
-        elif key == "inversion":
-            kwargs["inversion"] = val
 
     return [_explicit_voicing(name, frets, kwargs)]
 
@@ -230,7 +261,8 @@ def parse_file(
     voicings = []
     voicing_tuning = None
     fallback_used: set[tuple[str, str]] = set()
-    with open(filepath, "r") as f:
+    # utf-8-sig also accepts files saved with a byte-order mark (Notepad)
+    with open(filepath, "r", encoding="utf-8-sig") as f:
         for lineno, line in enumerate(f, 1):
             try:
                 # Tuning directive for the explicit voicings that follow

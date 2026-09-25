@@ -88,6 +88,8 @@ python3 -m uke_chords_print C Am G7 F
 python3 -m uke_chords_print "C:0003" "F:2010:fingers=2_1_"
 ```
 
+Options after the frets are separated by `:` and are the same as in text files (`fingers=`, `starting_fret=`, `notes=`, `inversion=`).
+
 ### 3. Text files
 
 ```bash
@@ -118,7 +120,7 @@ Em
 |-------|----------|---------|-------------|
 | Chord name | Yes | `C`, `Am7` | Name shown above the diagram |
 | Frets | No | `0003` | 4-character string, one fret per string in tuning order |
-| `fingers=` | No | `fingers=0003` | Finger to use (1-4, `0` = open) |
+| `fingers=` | No | `fingers=0003` | Finger per string: 4 characters, `1`-`4`, or `0`/`_` for none |
 | `notes=` | No | `notes=G C E C` | Note names shown below the fretboard |
 | `starting_fret=` | No | `starting_fret=5` | First fret shown on diagram (derived from the frets when omitted; the shape must fit the 4 frets shown) |
 | `inversion=` | No | `inversion=Root` | Inversion label |
@@ -126,6 +128,8 @@ Em
 The optional `@tuning <name>` line says which tuning the explicit voicings after it were written for. When you print with a `--tuning` whose shapes differ (e.g. `@tuning standard` printed with `--tuning baritone`), those lines are replaced by the easiest generated voicing for the chord name (a different one for each pinned shape of the same chord, so no diagram repeats). Standard and low-G share shapes, so explicit voicings are kept between them. Without `@tuning`, explicit voicings are always used as written. The bundled catalog files declare `@tuning standard`.
 
 Inline comments start with whitespace, then `#`, then whitespace (as in the example above). This keeps sharps like `C#` and heading text like `= Track #1` intact.
+
+Unknown options, a malformed `fingers=`, or a `starting_fret=` below 1 stop with an error naming the line. Files are read as UTF-8 (a byte-order mark, as Windows Notepad adds, is fine). Long titles and headings shrink to fit the page.
 
 See [`example_chords.txt`](example_chords.txt) for a complete sample.
 
