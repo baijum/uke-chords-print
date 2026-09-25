@@ -33,7 +33,7 @@ from dataclasses import dataclass
 
 from .chord_db import lookup_chord
 from .tunings import get_tuning, shapes_compatible
-from .voicing_gen import compute_starting_fret
+from .voicing_gen import compute_starting_fret, describe_voicing
 
 
 @dataclass
@@ -139,13 +139,20 @@ def _parse_options(extras: list[str]) -> dict:
     return kwargs
 
 
-def _explicit_voicing(name: str, frets: str, kwargs: dict) -> ChordVoicing:
-    """Build an explicit voicing, deriving starting_fret when not given.
+def _explicit_voicing(
+    name: str, frets: str, kwargs: dict, tuning: str = "standard"
+) -> ChordVoicing:
+    """Build an explicit voicing, filling in fields that weren't given.
+
+    starting_fret is derived from the frets. notes and inversion are
+    worked out from the chord name and tuning, as for generated voicings,
+    unless the chord name isn't recognized (e.g. "C (alt)").
 
     Args:
         name: Chord name shown above the diagram.
         frets: Validated 4-character fret string.
         kwargs: Extra ChordVoicing fields parsed from the input.
+        tuning: Tuning the shape is played in.
 
     Returns:
         The ChordVoicing.
@@ -166,6 +173,15 @@ def _explicit_voicing(name: str, frets: str, kwargs: dict) -> ChordVoicing:
             f"Frets '{frets}' don't fit the 4 frets shown from fret {start}. "
             f"Adjust starting_fret or use a shape spanning at most 4 frets."
         )
+
+    if "notes" not in kwargs or "inversion" not in kwargs:
+        try:
+            notes, inversion = describe_voicing(name, fret_values, tuning)
+        except ValueError:
+            pass  # unrecognized name: draw without note/inversion labels
+        else:
+            kwargs.setdefault("notes", notes)
+            kwargs.setdefault("inversion", inversion)
     return ChordVoicing(name=name, frets=frets, **kwargs)
 
 
@@ -195,7 +211,7 @@ def parse_cli_arg(
                          f"Expected 4 characters (digits or X).")
 
     kwargs = _parse_options(parts[2:])
-    return [_explicit_voicing(name, frets, kwargs)]
+    return [_explicit_voicing(name, frets, kwargs, tuning)]
 
 
 def parse_file_line(
@@ -251,7 +267,7 @@ def parse_file_line(
     if voicing_tuning and not shapes_compatible(voicing_tuning, tuning):
         return _fallback_voicing(name, tuning, fallback_used)
 
-    return [_explicit_voicing(name, frets, kwargs)]
+    return [_explicit_voicing(name, frets, kwargs, tuning)]
 
 
 def parse_file(
@@ -327,11 +343,16 @@ def _lookup_voicings(
 
     If single=True, return only the first (primary) voicing.
     """
-    entries = lookup_chord(name, tuning=tuning)
+    try:
+        entries = lookup_chord(name, tuning=tuning)
+    except ValueError as e:
+        raise ValueError(
+            f"{e}. Use --list to see standard chords, or provide explicit frets."
+        ) from e
     if entries is None:
         raise ValueError(
-            f"Chord '{name}' not found in database. "
-            f"Use --list to see available chords, or provide explicit frets."
+            f"No playable voicing found for '{name}'. "
+            f"Provide explicit frets instead."
         )
     if single:
         entries = entries[:1]

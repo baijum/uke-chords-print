@@ -2,7 +2,7 @@
 
 **Generate printable PDF chord diagrams for ukulele** -- perfect for keeping on a music stand while practicing.
 
-Chords are generated algorithmically from music theory using [pychord](https://github.com/yuma-m/pychord), so any chord name works out of the box -- 108 standard chords with 3 voicings each, ranked by a research-backed playability score.
+Chords are generated algorithmically from music theory using [pychord](https://github.com/yuma-m/pychord), so any chord name works out of the box -- 108 standard chords with up to 3 voicings each, ranked by a research-backed playability score.
 
 ---
 
@@ -121,9 +121,9 @@ Em
 | Chord name | Yes | `C`, `Am7` | Name shown above the diagram |
 | Frets | No | `0003` | 4-character string, one fret per string in tuning order |
 | `fingers=` | No | `fingers=0003` | Finger per string: 4 characters, `1`-`4`, or `0`/`_` for none |
-| `notes=` | No | `notes=G C E C` | Note names shown below the fretboard |
+| `notes=` | No | `notes=G C E C` | Note names shown below the fretboard (worked out from the chord name when omitted) |
 | `starting_fret=` | No | `starting_fret=5` | First fret shown on diagram (derived from the frets when omitted; the shape must fit the 4 frets shown) |
-| `inversion=` | No | `inversion=Root` | Inversion label |
+| `inversion=` | No | `inversion=Root` | Inversion label (worked out from the chord name when omitted) |
 
 The optional `@tuning <name>` line says which tuning the explicit voicings after it were written for. When you print with a `--tuning` whose shapes differ (e.g. `@tuning standard` printed with `--tuning baritone`), those lines are replaced by the easiest generated voicing for the chord name (a different one for each pinned shape of the same chord, so no diagram repeats). Standard and low-G share shapes, so explicit voicings are kept between them. Without `@tuning`, explicit voicings are always used as written. The bundled catalog files declare `@tuning standard`.
 
@@ -149,7 +149,7 @@ The voicing generator supports **108 standard chords** (12 roots x 9 qualities),
 | **Suspended 2nd** | Dsus2 | Csus2 ... Bsus2 |
 | **Suspended 4th** | Gsus4 | Csus4 ... Bsus4 |
 
-Other chords pychord understands work too. Chords with more than four notes (9ths, 11ths, 13ths, `6/9`) drop the 5th first, then inner extensions, since a ukulele has only four strings -- e.g. `C9` is voiced as C-E-Bb-D and `C13` as C-E-Bb-A. Slash chords like `C/G` put the named bass note lowest when a playable shape allows it.
+Other chords pychord understands work too. Chords with more than four notes (9ths, 11ths, 13ths, `6/9`) drop the 5th first, then inner extensions, since a ukulele has only four strings -- e.g. `C9` is voiced as C-E-Bb-D and `C13` as C-E-Bb-A. Slash chords like `C/G` put the named bass note lowest when a playable shape allows it. Added-tone spellings `6/9`, `7/9`, `maj7/9` and `7/13` are read as `69`, `9`, `maj9` and `13`; other numbers after `/` are rejected rather than guessed.
 
 Enharmonic aliases are supported: `Db` = `C#`, `Gb` = `F#`, `Ab` = `G#`, `Bb` = `A#`, etc.
 

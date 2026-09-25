@@ -38,14 +38,28 @@ CHORD_ALIASES: dict[str, str] = {
 
 
 def lookup_chord(name: str, tuning: str = "standard") -> list[dict] | None:
-    """Look up chord voicings by name. Returns list of voicing dicts or None."""
+    """Look up chord voicings by name.
+
+    Args:
+        name: Chord name.
+        tuning: Tuning name or alias.
+
+    Returns:
+        List of voicing dicts, or None if the chord has no playable voicing.
+
+    Raises:
+        ValueError: If the chord name is not recognized (the message says
+            why, e.g. an unknown quality).
+    """
+    error = None
+
     # Try direct generation
     try:
         voicings = generate_voicings(name, tuning=tuning)
         if voicings:
             return voicings
-    except ValueError:
-        pass
+    except ValueError as e:
+        error = e
 
     # Try alias
     canonical = CHORD_ALIASES.get(name)
@@ -57,6 +71,8 @@ def lookup_chord(name: str, tuning: str = "standard") -> list[dict] | None:
         except ValueError:
             pass
 
+    if error is not None:
+        raise error
     return None
 
 

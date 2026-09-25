@@ -76,6 +76,9 @@ Generator output is a dict; the parser converts it into `ChordVoicing`:
   (the diagram would otherwise clamp dots silently).
 - `difficulty` is produced by the generator but dropped by the parser; it is
   not rendered.
+- Explicit voicings get `notes` / `inversion` from
+  `voicing_gen.describe_voicing` (chord name + active tuning) unless given;
+  a muted string's note is `-`. Unrecognized names just get no labels.
 
 ### Sentinels
 
@@ -116,6 +119,10 @@ Generator output is a dict; the parser converts it into `ChordVoicing`:
   `#` + whitespace/end of line, applied to every line kind (chords,
   headings, `---`, `@tuning`). Sharps like `C#` and heading text like
   `Track #1` are safe; `C #note` is not a comment.
+- **Chord names go through `voicing_gen._pychord_name`** before pychord,
+  which reads `/<number>` as an inversion: `6/9`, `7/9`, `7/13` are respelled
+  (`A7/9` -> `A9`) and any other `/<number>` is rejected. `lookup_chord`
+  re-raises the parse error so users see why a name failed.
 - **Slash chords** (`C/G`): the generator keeps only shapes whose lowest
   MIDI pitch is the bass when any exist, and labels inversions from the
   chord above the bass (pychord puts the bass first in `components()`).

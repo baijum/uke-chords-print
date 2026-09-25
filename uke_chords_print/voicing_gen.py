@@ -8,6 +8,7 @@ combinations for playable voicings. Supports multiple tunings
 
 from __future__ import annotations
 
+import re
 from itertools import product
 
 from pychord import Chord
@@ -31,6 +32,14 @@ _NOTE_TO_PC: dict[str, int] = {
     "A#": 10, "Bb": 10, "Cbb": 10,
     "B": 11, "Cb": 11, "A##": 11,
 }
+
+
+# Sharp spelling for notes outside a chord (e.g. a passing tone in an
+# explicit voicing)
+_PC_TO_SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+
+# Common added-tone spellings that pychord would read as inversions
+_SLASH_EXTENSIONS = {"6/9": "69", "7/9": "9", "7/13": "13"}
 
 
 def _note_to_pc(name: str) -> int:
@@ -148,8 +157,9 @@ def _required_pcs(
 
     A ukulele has four strings, so chords with more distinct notes (9ths,
     11ths, 13ths) drop tones the way players do: the perfect 5th first,
-    then inner extensions from the top down. The root, 3rd, 7th and the
-    highest (naming) extension are always kept, as is a slash chord's bass.
+    then inner extensions from the top down, and as a last resort the root
+    (a rootless voicing, e.g. A9/E where the bass is the 5th). The 3rd, 7th,
+    highest (naming) extension and a slash chord's bass are always kept.
 
     Args:
         component_pcs: Chord tone pitch classes in pychord order.
@@ -175,6 +185,8 @@ def _required_pcs(
         if pc not in (top, bass_pc) and pc not in droppable
         and (pc - root_pc) % 12 not in keep_intervals
     ]
+    if root_pc not in (top, bass_pc):
+        droppable.append(root_pc)
 
     required = list(tones)
     for pc in droppable:
@@ -276,6 +288,110 @@ def _difficulty_label(score: float) -> str:
     return "very hard"
 
 
+def _pychord_name(chord_name: str) -> str:
+    """Respell chord names that pychord would misread.
+
+    pychord reads "/<number>" as an inversion, so "C6/9" or "A7/9" would
+    silently lose the added tone. Common forms are respelled ("C6/9" ->
+    "C69", "A7/9" -> "A9", "Cmaj7/9" -> "Cmaj9", "G7/13" -> "G13"); any
+    other "/<number>" is rejected rather than drawn as the wrong chord.
+
+    Args:
+        chord_name: Chord name as written by the user.
+
+    Returns:
+        The name to pass to pychord.
+
+    Raises:
+        ValueError: If the name has an unsupported "/<number>".
+    """
+    name = re.sub(
+        r"(6/9|7/9|7/13)(?=/|$)",
+        lambda m: _SLASH_EXTENSIONS[m.group(1)],
+        chord_name,
+    )
+    if re.search(r"/\d", name):
+        raise ValueError(
+            f"Cannot parse chord '{chord_name}': a number after '/' is not "
+            f"supported. Write the extension in the name (e.g. C9, C7b9) "
+            f"or use a bass note (e.g. C/E)"
+        )
+    return name
+
+
+def _resolve_chord(
+    chord_name: str,
+) -> tuple[list[str], str, str | None, list[str]]:
+    """Resolve a chord name to its notes with pychord.
+
+    Args:
+        chord_name: Chord name (e.g., "Am7", "C/G", "A7/9").
+
+    Returns:
+        (components, root, bass, base_components): note names, the root,
+        a slash chord's bass note (or None), and the notes of the chord
+        above the bass (the same as components without a bass).
+
+    Raises:
+        ValueError: If the chord name is not recognized.
+    """
+    pychord_name = _pychord_name(chord_name)
+    try:
+        chord = Chord(pychord_name)
+        components = chord.components()
+        root = chord.root
+        bass = chord.on or None
+        # A slash chord's inversion is named from the chord above the bass
+        base_components = (
+            Chord(pychord_name[:pychord_name.rindex("/")]).components()
+            if bass else components
+        )
+    except Exception as e:
+        raise ValueError(f"Cannot parse chord '{chord_name}': {e}") from e
+    return components, root, bass, base_components
+
+
+def describe_voicing(
+    chord_name: str,
+    frets: tuple[int, ...],
+    tuning: str = DEFAULT_TUNING,
+) -> tuple[str, str]:
+    """Name the notes and inversion of a given fret shape.
+
+    Used to label explicit voicings the same way as generated ones.
+
+    Args:
+        chord_name: Chord name the shape is played for.
+        frets: Fret per string in tuning order (-1 = muted).
+        tuning: Tuning name or alias.
+
+    Returns:
+        (notes, inversion): space-separated note names in string order
+        ("-" for a muted string) and the inversion label ("" if the
+        lowest note isn't a chord tone).
+
+    Raises:
+        ValueError: If the chord name is not recognized.
+    """
+    components, _, _, base_components = _resolve_chord(chord_name)
+    pc_to_name = {_note_to_pc(n): n for n in components}
+    tuning_midi = get_tuning_midi(tuning)
+
+    names = []
+    sounding = []
+    for open_midi, fret in zip(tuning_midi, frets):
+        if fret < 0:
+            names.append("-")
+            continue
+        pc = (open_midi + fret) % 12
+        names.append(pc_to_name.get(pc, _PC_TO_SHARP[pc]))
+        sounding.append(open_midi + fret)
+
+    base_pcs = [_note_to_pc(n) for n in base_components]
+    inversion = _detect_inversion(base_pcs, tuple(sounding)) if sounding else ""
+    return " ".join(names), inversion
+
+
 def generate_voicings(
     chord_name: str,
     *,
@@ -309,22 +425,7 @@ def generate_voicings(
         ValueError: If the chord name is not recognized by pychord.
     """
     tuning_midi = get_tuning_midi(tuning)
-
-    # pychord reads "/<digit>" as an inversion, so "C6/9" would lose its 9th
-    pychord_name = chord_name.replace("6/9", "69")
-
-    try:
-        chord = Chord(pychord_name)
-        components = chord.components()
-        root = chord.root
-        bass = chord.on
-        # A slash chord's inversion is named from the chord above the bass
-        base_components = (
-            Chord(pychord_name[:pychord_name.rindex("/")]).components()
-            if bass else components
-        )
-    except Exception as e:
-        raise ValueError(f"Cannot parse chord '{chord_name}': {e}") from e
+    components, root, bass, base_components = _resolve_chord(chord_name)
 
     component_pcs = [_note_to_pc(n) for n in components]
     target_pcs = set(component_pcs)

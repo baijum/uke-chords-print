@@ -253,7 +253,8 @@ def draw_chord_diagram(
     if voicing.notes:
         note_parts = voicing.notes.split()
         for i, note in enumerate(note_parts):
-            if i < NUM_STRINGS:
+            # "-" holds a muted string's place so later notes stay aligned
+            if i < NUM_STRINGS and note != "-":
                 x = fb_left + i * STRING_SPACING
                 d.add(String(
                     x, fb_bottom - 4 * mm,

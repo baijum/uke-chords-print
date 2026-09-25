@@ -47,9 +47,9 @@ def _paginate(
 ) -> list[list[ChordVoicing | list[ChordVoicing]]]:
     """Split voicings into pages of headings and rows of diagrams.
 
-    Each page holds at most `rows` rows plus any headings. A heading always
-    starts a new row and moves to the next page when no row would fit
-    after it. Pages are only created when something is drawn on them, so
+    Each page holds at most `rows` rows and at most `rows` headings, which
+    bounds the space headings reserve. A heading always starts a new row
+    and moves to the next page when no row (or heading) would fit after it. Pages are only created when something is drawn on them, so
     leading, trailing, or repeated page breaks never produce blank pages.
 
     Args:
@@ -65,21 +65,29 @@ def _paginate(
     page: list | None = None
     row: list | None = None
     page_rows = 0
+    page_headings = 0
 
     for voicing in voicings:
         if voicing is PAGE_BREAK:
             page = None  # the next item starts a fresh page
             continue
 
-        needs_row = not is_heading(voicing) and (row is None or len(row) >= cols)
-        if page is None or ((is_heading(voicing) or needs_row) and page_rows >= rows):
+        heading = is_heading(voicing)
+        needs_row = not heading and (row is None or len(row) >= cols)
+        page_full = (
+            (heading or needs_row) and page_rows >= rows
+            or heading and page_headings >= rows
+        )
+        if page is None or page_full:
             page = []
             pages.append(page)
             row = None
             page_rows = 0
+            page_headings = 0
 
-        if is_heading(voicing):
+        if heading:
             page.append(voicing)
+            page_headings += 1
             row = None
             continue
 
