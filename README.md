@@ -18,6 +18,10 @@ Chords are generated algorithmically from music theory using [pychord](https://g
 
 ## Quick Start
 
+Just want printable sheets? Download ready-made PDFs from the [v0.5.0 release](https://github.com/baijum/uke-chords-print/releases/tag/v0.5.0) (see [Chord Sheet Catalog](#chord-sheet-catalog)).
+
+To make your own (Python 3.11+):
+
 ```bash
 git clone https://github.com/baijum/uke-chords-print.git
 cd uke-chords-print
@@ -25,7 +29,7 @@ pip install -r requirements.txt
 
 # Generate a PDF with common beginner chords
 python3 -m uke_chords_print C Am G7 F -t "Beginner Chords"
-# -> chords.pdf (16 chord diagrams per A4 page)
+# -> chords.pdf: up to 3 voicings of each chord, 16 diagrams per A4 page
 ```
 
 ## Usage
@@ -36,7 +40,7 @@ python3 -m uke_chords_print [CHORDS...] [OPTIONS]
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `CHORDS` | | One or more chord names or `name:voicing` pairs |
+| `CHORDS` | | Chord names (`Am7`) or explicit voicings (`name:frets[:option=value...]`, see below) |
 | `--file`, `-f` | | Read chords from a text file (repeat to combine files) |
 | `--output`, `-o` | `chords.pdf` | Output PDF file path |
 | `--title`, `-t` | *(none)* | Title printed at the top of the first page |
@@ -64,7 +68,7 @@ python3 -m uke_chords_print C Am F G G7 D Em A7 \
 python3 -m uke_chords_print --file catalog/popular_chords.txt \
   --cols 3 --rows 3 -t "Popular Chords"
 
-# Mix database lookup and explicit voicings
+# Mix generated and explicit voicings
 python3 -m uke_chords_print Am G7 "F:2010:fingers=2_1_" -o mixed.pdf
 
 # Baritone ukulele (D-G-B-E tuning)
@@ -125,19 +129,25 @@ Em
 | `starting_fret=` | No | `starting_fret=5` | First fret shown on diagram (derived from the frets when omitted; the shape must fit the 4 frets shown) |
 | `inversion=` | No | `inversion=Root` | Inversion label (worked out from the chord name when omitted) |
 
-The optional `@tuning <name>` line says which tuning the explicit voicings after it were written for. When you print with a `--tuning` whose shapes differ (e.g. `@tuning standard` printed with `--tuning baritone`), those lines are replaced by the easiest generated voicing for the chord name. Different pinned shapes of one chord get different replacements (so two E shapes don't print the same diagram), while a shape repeated through a song always gets the same one. Lines that can't be replaced print as written: all-muted shapes like `N.C., XXXX` silently, and names that aren't chords (`My riff, 0003`) or chords with no playable voicing in that tuning with a warning naming the line. Standard and low-G share shapes, so explicit voicings are kept between them; only a pinned `inversion=` is worked out again, since low-G's lowest note is the G string. Without `@tuning`, explicit voicings are always used as written. The bundled catalog files declare `@tuning standard`.
+Explicit fret shapes only make sense in the tuning they were written for. The optional `@tuning <name>` line says which tuning that is for the explicit voicings after it (the bundled catalog files declare `@tuning standard`). When you print with a different `--tuning`:
+
+- **Baritone or D tuning** (different shapes): each explicit line is replaced by the easiest generated voicing for its chord name. Different pinned shapes of one chord get different replacements, so two E shapes don't print the same diagram, while a shape repeated through a song always gets the same one.
+- **Standard ↔ low-G** (same shapes): explicit lines are kept; only a pinned `inversion=` is worked out again, since low-G's lowest note is the G string.
+- **Lines that can't be replaced print as written**: all-muted shapes like `N.C., XXXX` silently, and names that aren't chords (`My riff, 0003`) or chords with no playable voicing in that tuning with a warning naming the line.
+
+Without `@tuning`, explicit voicings are always used as written.
 
 Inline comments start with whitespace, then `#`, then whitespace (as in the example above). This keeps sharps like `C#` and heading text like `= Track #1` intact.
 
-Unknown options, a malformed `fingers=`, a `starting_fret=` below 1, or an empty heading stop with an error naming the line. A file with no chords (only headings, say) is an error too. Files are read as UTF-8 (a byte-order mark, as Windows Notepad adds, is fine). Long titles and headings shrink to fit the page.
+Mistakes stop with an error naming the line: an unknown option, a `fingers=` that isn't 4 characters or puts a finger on an open or muted string, a `notes=` without one name per string, a `starting_fret=` below 1, a shape that doesn't fit the 4 frets shown, or an empty heading. A file with no chords (only headings, say) is an error too. Files are read as UTF-8 (a byte-order mark, as Windows Notepad adds, is fine). Long titles and headings shrink to fit the page.
 
 Titles, headings, chord names, notes, and inversion labels can use any script: characters outside basic Latin (e.g. `♪ ♭`, Greek, Cyrillic, Chinese, Japanese, Korean) are drawn with fonts bundled in [`uke_chords_print/bundled_fonts/`](uke_chords_print/bundled_fonts/), so sheets look the same on every machine. Other characters (e.g. most emoji) use an installed system font if one has them; otherwise they print as boxes and the CLI prints a warning. Right-to-left scripts are not shaped.
 
 See [`example_chords.txt`](example_chords.txt) for a complete sample.
 
-## Chord Database
+## Supported Chords
 
-The voicing generator supports **108 standard chords** (12 roots x 9 qualities), each with up to 3 voicings ranked by playability:
+There's no fixed chord list: voicings are generated from the chord's notes. `--list` shows the **108 standard chords** (12 roots x 9 qualities), each with up to 3 voicings ranked by playability:
 
 | Type | Example | All 12 roots |
 |------|---------|--------------|
@@ -155,7 +165,7 @@ Other chords pychord understands work too. Chords with more than four notes (9th
 
 Common chord-chart spellings work too: `C+` (aug), `C°` / `Co` (dim), `C°7`, `Cø` (m7b5), `CΔ` / `CΔ7` (maj7), `CΔ9`, `Cma7`, `Cm/maj7` / `Cm(maj7)` / `CmΔ7` (minor-major 7th), `Cmin7` / `Cmi7` / `C-7`, `C7(#9)`, `C+7` / `Caug7` (7#5), `C+9` / `Caug9` (9#5), `Cmaj7#5`, `Cmaj7b5`, `Cm9b5`, `Cmaj11`, `Cm(maj9)` / `CmM9`, `CmM7b5`, `CmM11`, `C7#9b13`, `C13b5b9`, `C7sus` (7sus4), `Cmi`, `Cadd2` (add9), and `♭` / `♯` accidentals (`B♭m7`). The diagram shows the name as you typed it. Note names are capital letters (`Am`, `C/G`); a lowercase one gets a suggestion instead of a guess.
 
-Enharmonic aliases are supported: `Db` = `C#`, `Gb` = `F#`, `Ab` = `G#`, `Bb` = `A#`, etc.
+Sharp and flat spellings of the same root both work (`Db` / `C#`, `Gb` / `F#`, ...).
 
 ```bash
 python3 -m uke_chords_print --list   # See all chords with voicings
@@ -177,7 +187,7 @@ Every voicing is scored for playability using 7 factors derived from the [ISMIR 
 
 The weights are calibrated against [chords-db](https://github.com/tombatossals/chords-db): for 163 of 180 common chords, the easiest voicing is the shape chord charts show first (C `0003`, Em `0432`, Fmaj7 `2413`, Cm7 `3333`, ...).
 
-Each voicing gets a label: **easy**, **moderate**, **hard**, or **very hard**. The generator returns voicings sorted easiest-first, so the primary voicing (`--single`) is always the most accessible.
+Voicings are printed easiest first, so the primary voicing (`--single`) is always the most accessible. Internally each score also maps to **easy**, **moderate**, **hard** or **very hard**; those tiers were used to build the [Challenging chords](catalog/challenging_chords.txt) sheet and aren't printed on diagrams.
 
 ## Chord Diagram
 
@@ -185,12 +195,12 @@ Each diagram on the PDF includes:
 
 - **Chord name** in bold at the top
 - **Fretboard grid** with 4 strings and 4 frets
-- **Nut** (thick top line) for open position, or **fret indicator** for higher positions
-- **Filled dots** with **fingering numbers** inside
+- **Nut** (thick top line) for open position, or a **fret indicator** (`5fr`) for higher positions
+- **Filled dots** with **finger numbers** inside (`--no-fingers` hides them)
 - **Open circles** for open strings, **X marks** for muted strings
-- **Note names** below the fretboard
-- **Fret numbers** and **inversion label** at the bottom
-- **Tuning indicator** for non-standard tunings (e.g., D-G-B-E for baritone)
+- **Note names** below each string
+- **Fret string** (`0 - 0 - 0 - 3`) and **inversion label** at the bottom (`Root` only with `--show-root`)
+- **String names** for every tuning except standard (e.g. `D-G-B-E` for baritone, `G-C-E-A` for low-G, so low-G sheets can be told apart)
 
 ## Chord Sheet Catalog
 
@@ -199,17 +209,17 @@ A ready-to-use collection of chord sheets lives in [`catalog/`](catalog/):
 | Category | Files |
 |----------|-------|
 | **Reference** | [Popular chords](catalog/popular_chords.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.5.0/popular_chords.pdf)), [All 108 chords](catalog/all_chords.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.5.0/all_chords.pdf)), [Challenging chords](catalog/challenging_chords.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.5.0/challenging_chords.pdf)) |
-| **Progressions** | [Pop anthems](catalog/progressions/pop_anthems.txt), [12-bar blues](catalog/progressions/12_bar_blues.txt), [Jazz essentials](catalog/progressions/jazz_essentials.txt), [Classic rock](catalog/progressions/classic_rock.txt), [50s doo-wop](catalog/progressions/50s_doo_wop.txt) |
-| **Songs** | [Beginner hits](catalog/songs/beginner_hits.txt), [Pop classics](catalog/songs/pop_classics.txt), [Campfire songs](catalog/songs/campfire_songs.txt) |
-| **Classical** | [Ode to Joy, Pachelbel Canon, Amazing Grace, Greensleeves...](catalog/classical/classical_pieces.txt) |
-| **World Music** | [Latin/Bossa Nova](catalog/world/latin_bossa.txt), [Hawaiian/Reggae](catalog/world/island_hawaiian.txt), [Folk traditions](catalog/world/folk_traditions.txt) |
+| **Progressions** | [Pop anthems](catalog/progressions/pop_anthems.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.5.0/pop_anthems.pdf)), [12-bar blues](catalog/progressions/12_bar_blues.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.5.0/12_bar_blues.pdf)), [Jazz essentials](catalog/progressions/jazz_essentials.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.5.0/jazz_essentials.pdf)), [Classic rock](catalog/progressions/classic_rock.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.5.0/classic_rock.pdf)), [50s doo-wop](catalog/progressions/50s_doo_wop.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.5.0/50s_doo_wop.pdf)) |
+| **Songs** | [Beginner hits](catalog/songs/beginner_hits.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.5.0/beginner_hits.pdf)), [Pop classics](catalog/songs/pop_classics.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.5.0/pop_classics.pdf)), [Campfire songs](catalog/songs/campfire_songs.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.5.0/campfire_songs.pdf)) |
+| **Classical** | [Ode to Joy, Pachelbel Canon, Amazing Grace, Greensleeves...](catalog/classical/classical_pieces.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.5.0/classical_pieces.pdf)) |
+| **World Music** | [Latin/Bossa Nova](catalog/world/latin_bossa.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.5.0/latin_bossa.pdf)), [Hawaiian/Reggae](catalog/world/island_hawaiian.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.5.0/island_hawaiian.pdf)), [Folk traditions](catalog/world/folk_traditions.txt) ([PDF](https://github.com/baijum/uke-chords-print/releases/download/v0.5.0/folk_traditions.pdf)) |
 
 ```bash
 python3 -m uke_chords_print --file catalog/songs/beginner_hits.txt \
   --single -t "Beginner Hits"
 ```
 
-See the full list in the [Catalog README](catalog/README.md). PDFs of every sheet are attached to the [v0.5.0 release](https://github.com/baijum/uke-chords-print/releases/tag/v0.5.0).
+The PDFs are standard tuning with one voicing per chord; build any sheet yourself for another tuning or layout (add `--tuning baritone`, drop `--single`, ...). See the [Catalog README](catalog/README.md) for what each sheet contains.
 
 ## Tunings
 
@@ -236,7 +246,7 @@ python3 -m uke_chords_print --tuning baritone C Am G7 F -o baritone.pdf
 python3 -m uke_chords_print --list --tuning baritone
 ```
 
-For non-standard tunings, the string names are shown on each diagram (e.g., `D-G-B-E` for baritone).
+For every tuning except standard, the string names are shown on each diagram (e.g. `D-G-B-E` for baritone).
 
 ## Voicing Notation
 
@@ -246,7 +256,7 @@ Voicings use a **4-character string** representing each string from left to righ
 |-----------|---------|
 | `0` | Open string |
 | `1`-`9` | Fret number |
-| `X` | Muted string |
+| `X` or `x` | Muted string |
 
 **Standard tuning (G-C-E-A):**
 
@@ -287,7 +297,7 @@ uke-chords-print/
     pdf_generator.py     # Page layout and PDF output
     fonts.py             # Fallback fonts for non-Latin text
     bundled_fonts/       # DejaVu Sans, Droid Sans Fallback, Baekmuk (with licenses)
-  catalog/               # Pre-made chord sheet files
+  catalog/               # Pre-made chord sheets (popular, all, challenging chords)
     progressions/        # Named chord progressions
     songs/               # Hit songs by difficulty
     classical/           # Classical music
@@ -295,19 +305,22 @@ uke-chords-print/
   tests/                 # pytest suite
     data/chords-db/      # Reference chord shapes (chords-db, MIT)
   example_chords.txt     # Sample input file
+  generate_catalog.sh    # Build every catalog PDF into catalog/pdf/
   requirements.txt       # Python dependencies
   requirements-dev.txt   # + pytest, pytest-cov
+  AGENTS.md              # Notes for contributors and coding agents
 ```
 
 ## How the Voicing Generator Works
 
 The generator uses [pychord](https://github.com/yuma-m/pychord) for music theory and a fretboard search for playable shapes:
 
-1. **Resolve notes** -- `pychord.Chord("Am7").components()` returns `['A', 'C', 'E', 'G']`
+1. **Resolve notes** -- `pychord.Chord("Am7").components()` returns `['A', 'C', 'E', 'G']` (chart spellings like `C°` are respelled first)
 2. **Search fretboard** -- iterate valid fret combinations on all 4 strings (frets 0-9)
-3. **Filter** -- all notes must be chord tones, all required chord tones must be present (chords with 5+ notes omit the 5th, then natural extensions, then the root), fret span <= 3
-4. **Score** -- rank by 7-factor difficulty heuristic
-5. **Return** -- top 3 voicings, easiest first
+3. **Filter** -- all notes must be chord tones, all required chord tones must be present (chords with 5+ notes omit the 5th, then natural extensions, then the root), fret span <= 3; slash chords keep shapes with the named bass lowest when any exist
+4. **Finger** -- assign fingers the way chord charts do (one finger per fret from the index, index barres)
+5. **Score** -- rank by the difficulty score above
+6. **Return** -- top 3 voicings, easiest first
 
 ## Development
 
@@ -315,7 +328,10 @@ The generator uses [pychord](https://github.com/yuma-m/pychord) for music theory
 pip install -r requirements-dev.txt
 python3 -m pytest          # ~10 s
 python3 -m pytest --cov    # with line and branch coverage (must stay at 100%)
+./generate_catalog.sh      # rebuild every catalog PDF into catalog/pdf/
 ```
+
+See [AGENTS.md](AGENTS.md) for the architecture, conventions, and gotchas.
 
 The suite (about 10,000 tests) checks the generator against two independent references:
 
@@ -328,4 +344,4 @@ It also covers properties of every generated voicing in all four tunings, parsin
 
 ## License
 
-MIT
+[MIT](LICENSE). The bundled fonts have their own licenses, listed in [`uke_chords_print/bundled_fonts/`](uke_chords_print/bundled_fonts/README.md).
