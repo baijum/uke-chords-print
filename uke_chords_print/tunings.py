@@ -89,6 +89,22 @@ def shapes_compatible(a: str, b: str) -> bool:
     )
 
 
+def display_labels(name: str) -> tuple[str, ...] | None:
+    """String names to print on diagrams: every tuning but standard.
+
+    Low-G shows G-C-E-A too, so its sheets can be told apart from
+    standard ones.
+
+    Args:
+        name: Tuning name or alias.
+
+    Returns:
+        The string labels, or None for standard tuning.
+    """
+    tuning = get_tuning(name)
+    return tuning.string_labels if tuning.name != "standard" else None
+
+
 def get_tuning_midi(name: str) -> tuple[int, ...]:
     """Get MIDI note values for a tuning.
 

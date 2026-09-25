@@ -20,17 +20,17 @@ Chords are generated algorithmically from music theory using [pychord](https://g
 
 Just want printable sheets? Download ready-made PDFs from the [v0.5.0 release](https://github.com/baijum/uke-chords-print/releases/tag/v0.5.0) (see [Chord Sheet Catalog](#chord-sheet-catalog)).
 
-To make your own (Python 3.11+):
+To make your own, install it (Python 3.11+):
 
 ```bash
-git clone https://github.com/baijum/uke-chords-print.git
-cd uke-chords-print
-pip install -r requirements.txt
+pip install git+https://github.com/baijum/uke-chords-print.git
 
 # Generate a PDF with common beginner chords
-python3 -m uke_chords_print C Am G7 F -t "Beginner Chords"
+uke-chords-print C Am G7 F -t "Beginner Chords"
 # -> chords.pdf: up to 3 voicings of each chord, 16 diagrams per A4 page
 ```
+
+Or work from a clone: `pip install -e .` there installs the same `uke-chords-print` command, and `python3 -m uke_chords_print` runs it too (the examples below use that form). It can also be used [as a Python library](#using-as-a-library).
 
 ## Usage
 
@@ -275,6 +275,50 @@ Voicings use a **4-character string** representing each string from left to righ
 | `2220` | A | D at 2nd, G at 2nd, B at 2nd, E open |
 | `0232` | D | D open, G at 2nd, B at 3rd, E at 2nd |
 
+## Using as a Library
+
+Everything the command line does is available from Python:
+
+```python
+import io
+import uke_chords_print as ukc
+
+am7 = ukc.voicings("Am7")                  # easiest first
+am7[0]
+# Voicing(name='Am7', frets='0000', fingers='0000', notes='G C E A',
+#         inversion='1st Inv', starting_fret=1, difficulty='easy')
+
+ukc.voicings("G", tuning="baritone", limit=1)[0].frets   # '0003'
+my_c = ukc.voicing("C", "X003", fingers="0003")          # your own shape
+
+# A PDF, to a path or any binary file object
+items = [ukc.heading("Verse"), *ukc.voicings("C", limit=1), my_c,
+         ukc.PAGE_BREAK, *ukc.parse_sheet("= Chorus\nF\nG7\n", single=True)]
+ukc.render_pdf(items, "sheet.pdf", title="My Song")
+buf = io.BytesIO()
+ukc.render_pdf(am7, buf, paper="letter", cols=3)
+
+# One diagram, for a web page or an image
+svg = ukc.diagram_svg(am7[0])              # SVG text
+drawing = ukc.diagram(am7[0])              # ReportLab Drawing (renderPM -> PNG)
+```
+
+| Name | What it does |
+|------|--------------|
+| `voicings(name, tuning="standard", limit=3)` | Generated voicings, easiest first (`[]` if none fits) |
+| `voicing(name, frets, *, fingers, notes, inversion, starting_fret, tuning)` | A voicing for a shape you choose; labels are worked out when omitted |
+| `parse_sheet(text, *, tuning, single)` / `read_sheet(path, ...)` | Parse the [chord file format](#3-text-files) |
+| `heading(text)`, `PAGE_BREAK` | Section headings and page breaks for `render_pdf` |
+| `render_pdf(items, output, *, title, paper, cols, rows, tuning, show_root, show_fingers)` | Write a PDF like the command line |
+| `diagram(voicing, tuning, *, show_root, show_fingers)` / `diagram_svg(...)` | One chord diagram as a ReportLab `Drawing` or SVG text |
+| `Voicing` | Dataclass: `name`, `frets`, `fingers`, `notes`, `inversion`, `starting_fret`, `difficulty` |
+| `TUNINGS`, `Tuning`, `get_tuning(name)`, `STANDARD_CHORDS` | Tunings (with aliases) and the 108 chords `--list` shows |
+| `ChordWarning` | Warning for chord-file lines kept as written (see [`@tuning`](#3-text-files)) |
+
+Invalid input raises `ValueError` with the same messages as the command line. The names above (the package's `__all__`) are the stable API; the submodules are internal and may change. The package is typed (`py.typed`).
+
+Two things to know: importing it registers a few chord types pychord lacks (`maj7b5`, `mM9`, ...) in pychord's shared table, so other pychord code in the same process sees them too; and SVG output names the bundled fonts for text outside Windows-1252, which a browser may not have.
+
 ## Requirements
 
 - Python 3.11+
@@ -286,7 +330,8 @@ Voicings use a **4-character string** representing each string from left to righ
 ```
 uke-chords-print/
   uke_chords_print/
-    __init__.py          # Package metadata
+    __init__.py          # Public API (__all__) and version
+    api.py               # Library functions: voicings, render_pdf, diagram, ...
     __main__.py          # python -m entry point
     cli.py               # Argument parsing and CLI logic
     chord_db.py          # Chord lookup (wraps voicing generator)
@@ -306,6 +351,8 @@ uke-chords-print/
     data/chords-db/      # Reference chord shapes (chords-db, MIT)
   example_chords.txt     # Sample input file
   generate_catalog.sh    # Build every catalog PDF into catalog/pdf/
+  pyproject.toml         # Package metadata and the uke-chords-print command
+  MANIFEST.in            # Extra files in the source distribution (tests, catalog)
   requirements.txt       # Python dependencies
   requirements-dev.txt   # + pytest, pytest-cov
   AGENTS.md              # Notes for contributors and coding agents
@@ -325,10 +372,11 @@ The generator uses [pychord](https://github.com/yuma-m/pychord) for music theory
 ## Development
 
 ```bash
-pip install -r requirements-dev.txt
+pip install -r requirements-dev.txt   # or: pip install -e ".[test]"
 python3 -m pytest          # ~10 s
 python3 -m pytest --cov    # with line and branch coverage (must stay at 100%)
 ./generate_catalog.sh      # rebuild every catalog PDF into catalog/pdf/
+python3 -m build           # wheel and sdist into dist/ (pip install build)
 ```
 
 See [AGENTS.md](AGENTS.md) for the architecture, conventions, and gotchas.
@@ -340,7 +388,7 @@ The suite (about 10,000 tests) checks the generator against two independent refe
 
 It also covers properties of every generated voicing in all four tunings, parsing, PDF layout, font fallback, the CLI, and the catalog files. Known gaps are marked `xfail`; they pass once fixed and then fail, which is a reminder to remove the marker.
 
-[GitHub Actions](.github/workflows/tests.yml) runs the suite with coverage on Python 3.11–3.14 for every push and pull request (failing below 100% line and branch coverage, see `.coveragerc`), and builds every catalog PDF (downloadable from the run as the `catalog-pdfs` artifact).
+[GitHub Actions](.github/workflows/tests.yml) runs the suite with coverage on Python 3.11–3.14 for every push and pull request (failing below 100% line and branch coverage, see `.coveragerc`), and builds every catalog PDF (downloadable from the run as the `catalog-pdfs` artifact). A packaging job builds the wheel and sdist, installs the wheel in a clean environment, runs the command and the library from outside the source tree, and runs the test suite from the unpacked sdist.
 
 ## License
 

@@ -34,7 +34,7 @@ from uke_chords_print.diagram import (
 from uke_chords_print.fonts import text_width
 from uke_chords_print.parser import (
     PAGE_BREAK,
-    ChordVoicing,
+    Voicing,
     make_heading,
     parse_cli_args,
 )
@@ -43,8 +43,8 @@ from uke_chords_print.pdf_generator import _paginate, generate_pdf
 from .support import pdf_page_count, pdf_text
 
 
-def _chords(n: int) -> list[ChordVoicing]:
-    return [ChordVoicing(name=f"C{i}", frets="0003") for i in range(n)]
+def _chords(n: int) -> list[Voicing]:
+    return [Voicing(name=f"C{i}", frets="0003") for i in range(n)]
 
 
 def _shape(pages) -> list[list]:
@@ -191,11 +191,11 @@ class TestDiagram:
         return [s.text for s in drawing.contents if isinstance(s, String)]
 
     def test_size(self):
-        d = draw_chord_diagram(ChordVoicing(name="C", frets="0003"))
+        d = draw_chord_diagram(Voicing(name="C", frets="0003"))
         assert (d.width, d.height) == (DIAGRAM_WIDTH, DIAGRAM_HEIGHT)
 
     def test_open_chord(self):
-        d = draw_chord_diagram(ChordVoicing(
+        d = draw_chord_diagram(Voicing(
             name="C", frets="0003", fingers="0003", notes="G C E C",
             inversion="Root",
         ))
@@ -210,7 +210,7 @@ class TestDiagram:
         assert len(open_markers) == 3
 
     def test_high_position_shows_fret_label(self):
-        d = draw_chord_diagram(ChordVoicing(
+        d = draw_chord_diagram(Voicing(
             name="C", frets="5433", fingers="3211", starting_fret=3,
         ))
         assert "3fr" in self._strings(d)
@@ -223,7 +223,7 @@ class TestDiagram:
 
     def test_fret_label_without_fretted_strings(self):
         # Only open/muted strings: the label sits left of the fretboard
-        d = draw_chord_diagram(ChordVoicing(
+        d = draw_chord_diagram(Voicing(
             name="N.C.", frets="XX00", starting_fret=5,
         ))
         [label] = [s for s in d.contents
@@ -236,7 +236,7 @@ class TestDiagram:
     ])
     def test_dots_outside_window_are_clamped(self, frets, start, spaces):
         # The parser rejects these; the drawing still stays in bounds
-        d = draw_chord_diagram(ChordVoicing(
+        d = draw_chord_diagram(Voicing(
             name="C", frets=frets, starting_fret=start,
         ))
         fb_top = DIAGRAM_HEIGHT - PAD_TOP
@@ -246,12 +246,12 @@ class TestDiagram:
                 for c in dots] == spaces
 
     def test_short_fingers_are_padded(self):
-        d = draw_chord_diagram(ChordVoicing(name="C", frets="2003",
+        d = draw_chord_diagram(Voicing(name="C", frets="2003",
                                             fingers="1"))
         assert self._strings(d)[:2] == ["1", "C"]
 
     def test_fret_label_stays_inside(self):
-        d = draw_chord_diagram(ChordVoicing(
+        d = draw_chord_diagram(Voicing(
             name="C", frets="0007", starting_fret=7,
         ))
         [label] = [s for s in d.contents
@@ -260,8 +260,8 @@ class TestDiagram:
         assert label.x + width <= DIAGRAM_WIDTH
 
     def test_muted_string_draws_x_and_skips_note(self):
-        plain = draw_chord_diagram(ChordVoicing(name="C", frets="0003"))
-        muted = draw_chord_diagram(ChordVoicing(
+        plain = draw_chord_diagram(Voicing(name="C", frets="0003"))
+        muted = draw_chord_diagram(Voicing(
             name="C", frets="X003", notes="- C E C",
         ))
         lines = lambda d: sum(isinstance(s, Line) for s in d.contents)
@@ -270,12 +270,12 @@ class TestDiagram:
         assert "X - 0 - 0 - 3" in self._strings(muted)
 
     def test_hidden_fingers(self):
-        d = draw_chord_diagram(ChordVoicing(name="F", frets="2010",
+        d = draw_chord_diagram(Voicing(name="F", frets="2010",
                                             fingers=""))
         assert self._strings(d) == ["F", "2 - 0 - 1 - 0"]
 
     def test_string_labels(self):
-        d = draw_chord_diagram(ChordVoicing(name="G", frets="0003"),
+        d = draw_chord_diagram(Voicing(name="G", frets="0003"),
                                string_labels=("D", "G", "B", "E"))
         assert "0-0-0-3  (D-G-B-E)" in self._strings(d)
 
@@ -285,7 +285,7 @@ class TestDiagram:
     def test_labels_fit_inside(self, name):
         """Every label, including fallback-font runs drawn side by side,
         stays inside the diagram so it can't spill into the next cell."""
-        d = draw_chord_diagram(ChordVoicing(
+        d = draw_chord_diagram(Voicing(
             name=name, frets="0007", starting_fret=7,
             inversion="An inversion label that is far too long",
         ))
@@ -347,7 +347,7 @@ class TestDiagramGeometry:
     @pytest.mark.parametrize("start, nut", [(1, True), (5, False)])
     def test_grid(self, start, nut):
         frets = "0003" if nut else "0557"
-        lines, _, _ = self._parts(ChordVoicing(name="C", frets=frets,
+        lines, _, _ = self._parts(Voicing(name="C", frets=frets,
                                                starting_fret=start))
         verticals = [ln for ln in lines if ln.x1 == ln.x2]
         horizontals = [ln for ln in lines if ln.y1 == ln.y2]
@@ -369,7 +369,7 @@ class TestDiagramGeometry:
             assert top.strokeWidth < NUT_THICKNESS / 2
 
     def test_open_and_muted_markers(self):
-        lines, circles, _ = self._parts(ChordVoicing(name="C", frets="X003"))
+        lines, circles, _ = self._parts(Voicing(name="C", frets="X003"))
         [open1, open2] = [c for c in circles if c.fillColor != DOT_COLOR]
         for circle, i in ((open1, 1), (open2, 2)):
             assert (circle.cx, circle.cy, circle.r) == pytest.approx(
@@ -389,7 +389,7 @@ class TestDiagramGeometry:
         ("2010", "2010", 1), ("5433", "3211", 3), ("0787", "0132", 7),
     ])
     def test_dots_and_finger_numbers(self, frets, fingers, start):
-        _, circles, strings = self._parts(ChordVoicing(
+        _, circles, strings = self._parts(Voicing(
             name="C", frets=frets, fingers=fingers, starting_fret=start))
         dots = [c for c in circles if c.fillColor == DOT_COLOR]
         fretted = [(i, int(f)) for i, f in enumerate(frets) if f != "0"]
@@ -406,7 +406,7 @@ class TestDiagramGeometry:
             assert dot.cy - dot.r < number.y < dot.cy  # sits inside the dot
 
     def test_labels_centred_and_stacked(self):
-        _, circles, strings = self._parts(ChordVoicing(
+        _, circles, strings = self._parts(Voicing(
             name="Am7", frets="0000", fingers="0000", notes="G C E A",
             inversion="1st Inv"))
         name, *notes, frets_line, inversion = strings
@@ -425,7 +425,7 @@ class TestDiagramGeometry:
         assert inversion.y > 0
 
     def test_fret_label_between_fretboard_and_name(self):
-        _, _, strings = self._parts(ChordVoicing(
+        _, _, strings = self._parts(Voicing(
             name="C", frets="5433", starting_fret=3))
         name = next(s for s in strings if s.fontSize == CHORD_NAME_SIZE)
         label = next(s for s in strings if s.text == "3fr")
@@ -648,7 +648,7 @@ class TestPageLayoutExact:
         return [s.text for s in drawing.contents if isinstance(s, String)]
 
     def test_hidden_labels_are_not_drawn(self, layout):
-        voicing = ChordVoicing(name="C", frets="0003", fingers="0003",
+        voicing = Voicing(name="C", frets="0003", fingers="0003",
                                notes="G C E C", inversion="Root")
         shown = layout([voicing], show_root=True).diagrams[0][4]
         hidden = layout([voicing], no_fingers=True).diagrams[0][4]

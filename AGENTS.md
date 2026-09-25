@@ -17,7 +17,15 @@ database, despite the `chord_db` module name.
   `requirements.txt`). 1.4 is the first release whose `set_quality` takes
   interval names (`_EXTRA_QUALITIES`) and that spells notes the way the
   catalog's `notes=` values do (E# in C#, Cb in Abm).
-- No `pyproject.toml`/`setup.py`: the tool is run as a module, not installed.
+- Installable package (`pyproject.toml`, setuptools): `pip install -e .`
+  gives the `uke-chords-print` command (= `cli:main`); `python3 -m
+  uke_chords_print` still works. The version is read from
+  `uke_chords_print.__version__`. Package data: `py.typed` and
+  `bundled_fonts/*`; `MANIFEST.in` adds the tests, catalog and config to
+  the sdist so the suite runs from it.
+- Library API: `uke_chords_print/api.py`, re-exported by `__init__.py`.
+  Only the names in `uke_chords_print.__all__` are public and stable (pinned
+  by `tests/test_api.py`); every other module is internal.
 - pytest suite in `tests/` (dev deps in `requirements-dev.txt`), run by
   GitHub Actions (`.github/workflows/tests.yml`) on Python 3.11–3.14 for
   every push and pull request, with coverage (100% line and branch
@@ -27,7 +35,7 @@ database, despite the `chord_db` module name.
 ## Commands
 
 ```bash
-pip install -r requirements-dev.txt
+pip install -r requirements-dev.txt   # or: pip install -e ".[test]"
 
 # Run the tests (~10 s)
 python3 -m pytest
@@ -56,14 +64,15 @@ Data flows in one direction:
 
 ```
 cli.py ──► parser.py ──► chord_db.py ──► voicing_gen.py ──► tunings.py
-   │           │ (ChordVoicing list)
+   │           │ (Voicing list)
    └──────────►pdf_generator.py ──► diagram.py (one ReportLab Drawing per chord)
 ```
 
 | Module | Responsibility |
 |--------|----------------|
+| `api.py` | Public library functions (`voicings`, `voicing`, `parse_sheet`, `read_sheet`, `heading`, `render_pdf`, `diagram`, `diagram_svg`): thin wrappers over the modules below, with keyword-only options and `show_fingers` rather than the CLI's `no_fingers`. |
 | `cli.py` | argparse, collects voicings from each `--file` (repeatable, in order) then positional args, calls `generate_pdf`. |
-| `parser.py` | `ChordVoicing` dataclass; parses CLI args (`name:frets:key=val`) and file lines (`name, frets, key=val`); page-break / heading sentinels. |
+| `parser.py` | `Voicing` dataclass; parses CLI args (`name:frets:key=val`) and file lines (`name, frets, key=val`); page-break / heading sentinels. |
 | `chord_db.py` | `lookup_chord()` wraps the generator and retries with enharmonic `CHORD_ALIASES`; `STANDARD_CHORDS` (12 roots × 9 qualities = 108) backs `--list`. |
 | `voicing_gen.py` | Chord → pitch classes → search frets 0–9 on 4 strings → filter (required chord tones present — 5+ note chords drop the 5th, natural 9th/11th, root, then altered tones; span ≤ 3) → score → top 3. Also finger assignment and inversion detection. |
 | `tunings.py` | `Tuning` dataclass + `TUNINGS` dict (MIDI notes per string, labels, aliases). `TUNING_CHOICES` feeds argparse. |
@@ -73,7 +82,7 @@ cli.py ──► parser.py ──► chord_db.py ──► voicing_gen.py ──
 
 ### Voicing representation
 
-Generator output is a dict; the parser converts it into `ChordVoicing`:
+Generator output is a dict; the parser converts it into `Voicing`:
 
 - `frets`: exactly 4 chars, one per string in tuning order (left→right on the
   diagram). `0` open, `1`–`9` fret, `X` muted. Single-digit only — this is why
@@ -87,8 +96,8 @@ Generator output is a dict; the parser converts it into `ChordVoicing`:
   offsets dots. Explicit voicings derive it via `compute_starting_fret` when
   omitted, and the parser rejects shapes that don't fit the 4 frets shown
   (the diagram would otherwise clamp dots silently).
-- `difficulty` is produced by the generator but dropped by the parser; it is
-  not rendered.
+- `difficulty` comes from the generator (`""` for explicit voicings); it is
+  on `Voicing` for library users but not rendered.
 - Explicit voicings get `notes` / `inversion` from
   `voicing_gen.describe_voicing` (chord name + active tuning) unless given;
   a muted string's note is `-`. Unrecognized names just get no labels.
@@ -96,7 +105,7 @@ Generator output is a dict; the parser converts it into `ChordVoicing`:
 ### Sentinels
 
 `parser.PAGE_BREAK` is a singleton compared with `is`. Headings are
-`ChordVoicing(name="__HEADING__", notes=<heading text>)` and checked with
+`Voicing(name="__HEADING__", notes=<heading text>)` and checked with
 `is_heading()`. Any code that iterates or counts voicings must skip both
 (see the count in `cli.main`).
 
@@ -172,6 +181,12 @@ string order + labels + aliases). CLI choices, `--list`, and generation pick
 it up automatically. Then update the `--tuning` help text in `cli.py` and the
 Tunings table / options table in `README.md`.
 
+**Change the public API:** edit `api.py` (and `__all__` in both
+`api.py` and `__init__.py`), cover it in `tests/test_api.py` using only
+names from the package root, and update the README's "Using as a Library"
+table. Don't remove or rename public names or parameters within a minor
+version; add new parameters as keyword-only with defaults.
+
 **Add a CLI option:** add it in `cli.build_parser()`, thread it through
 `main()` into `parse_file`/`parse_cli_args` or `generate_pdf`, and add a row
 to the README options table.
@@ -224,7 +239,7 @@ behavior no test pins down, run mutmut on a copy of the repo (it writes a
 `mutants/` directory): add `[tool.mutmut]` with
 `source_paths = ["uke_chords_print/"]` and
 `also_copy = ["catalog/", "generate_catalog.sh", "pytest.ini", "tests/"]`
-to a scratch `pyproject.toml`, then `mutmut run` and `mutmut results`
+to the copy's `pyproject.toml`, then `mutmut run` and `mutmut results`
 (~25 min). Expect survivors in colours, stroke widths and help text.
 
 ## Verifying changes

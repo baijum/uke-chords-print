@@ -46,3 +46,53 @@ jobs:
           name: catalog-pdfs
           path: catalog/pdf/*.pdf
           retention-days: 14
+
+  package:
+    name: Package
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Build wheel and sdist
+        run: |
+          python -m pip install build
+          python -m build
+
+      - name: Install the wheel in a clean environment
+        run: |
+          python -m venv /tmp/venv
+          /tmp/venv/bin/pip install dist/*.whl
+
+      - name: Use the installed command and library
+        working-directory: /tmp  # away from the source tree
+        run: |
+          /tmp/venv/bin/uke-chords-print C Am F G -t "Песни 歌" -o cli.pdf
+          /tmp/venv/bin/python - <<'PY'
+          import io
+          import uke_chords_print as ukc
+
+          buf = io.BytesIO()
+          ukc.render_pdf(ukc.voicings("Am7") + [ukc.heading("한국어")], buf)
+          data = buf.getvalue()
+          assert data.startswith(b"%PDF-") and b"/FontFile2" in data
+          assert ukc.voicings("C")[0].frets == "0003"
+          print(ukc.__version__, ukc.__file__)
+          PY
+
+      - name: Test the unpacked sdist
+        run: |
+          mkdir /tmp/sdist
+          tar xzf dist/*.tar.gz -C /tmp/sdist --strip-components=1
+          /tmp/venv/bin/pip install pytest
+          cd /tmp/sdist && /tmp/venv/bin/python -m pytest -q -p no:cacheprovider
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+          retention-days: 14

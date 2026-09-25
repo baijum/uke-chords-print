@@ -6,7 +6,8 @@ Supports US Letter and A4 page sizes with configurable grid dimensions.
 
 from __future__ import annotations
 
-from dataclasses import replace
+import os
+from typing import BinaryIO
 
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.units import mm, inch
@@ -14,11 +15,12 @@ from reportlab.pdfgen import canvas
 from reportlab.graphics import renderPDF
 
 from .fonts import draw_centred
-from .parser import ChordVoicing, PAGE_BREAK, is_heading
+from .parser import Voicing, PAGE_BREAK, is_heading
 from .diagram import (
-    draw_chord_diagram, fit_font_size, DIAGRAM_WIDTH, DIAGRAM_HEIGHT,
+    draw_chord_diagram, displayed, fit_font_size, DIAGRAM_WIDTH,
+    DIAGRAM_HEIGHT,
 )
-from .tunings import get_tuning
+from .tunings import display_labels
 
 # Page margins
 MARGIN_TOP = 0.3 * inch
@@ -44,8 +46,8 @@ PAGE_SIZES = {
 
 
 def _paginate(
-    voicings: list[ChordVoicing], cols: int, rows: int
-) -> list[list[ChordVoicing | list[ChordVoicing]]]:
+    voicings: list[Voicing], cols: int, rows: int
+) -> list[list[Voicing | list[Voicing]]]:
     """Split voicings into pages of headings and rows of diagrams.
 
     Each page holds at most `rows` rows and at most `rows` headings, which
@@ -102,8 +104,8 @@ def _paginate(
 
 
 def generate_pdf(
-    voicings: list[ChordVoicing],
-    output_path: str = "chords.pdf",
+    voicings: list[Voicing],
+    output_path: str | os.PathLike[str] | BinaryIO = "chords.pdf",
     title: str = "",
     paper: str = "a4",
     cols: int = 4,
@@ -111,13 +113,14 @@ def generate_pdf(
     show_root: bool = False,
     no_fingers: bool = False,
     tuning: str = "standard",
-) -> str:
+) -> str | os.PathLike[str] | BinaryIO:
     """
     Generate a PDF with chord diagrams laid out in a grid.
 
     Args:
-        voicings: List of ChordVoicing objects to render.
-        output_path: Output PDF file path.
+        voicings: List of Voicing objects to render.
+        output_path: Output file path, or a binary file object (e.g.
+            io.BytesIO) to write the PDF to.
         title: Optional title for the first page.
         paper: Paper size ("letter" or "a4").
         cols: Number of columns per page.
@@ -127,7 +130,7 @@ def generate_pdf(
         tuning: Tuning name for string label display.
 
     Returns:
-        The output file path.
+        output_path, as given.
 
     Raises:
         ValueError: If the grid is empty or headings leave no room for rows.
@@ -138,10 +141,7 @@ def generate_pdf(
     page_size = PAGE_SIZES.get(paper.lower(), A4)
     page_width, page_height = page_size
 
-    # Get string labels for non-standard tunings
-    tuning_obj = get_tuning(tuning)
-    # Only show string labels for non-standard tunings (baritone has different labels)
-    string_labels = tuning_obj.string_labels if tuning_obj.name != "standard" else None
+    string_labels = display_labels(tuning)
 
     pages = _paginate(voicings, cols, rows)
 
@@ -172,7 +172,9 @@ def generate_pdf(
     x_offset = (cell_width - DIAGRAM_WIDTH * scale) / 2
     y_offset = (cell_height - DIAGRAM_HEIGHT * scale) / 2
 
-    c = canvas.Canvas(output_path, pagesize=page_size)
+    target = (output_path if hasattr(output_path, "write")
+              else os.fspath(output_path))
+    c = canvas.Canvas(target, pagesize=page_size)
     c.setTitle(title or "Ukulele Chord Diagrams")
     c.setAuthor("uke-chords-print")
 
@@ -217,15 +219,10 @@ def generate_pdf(
 
             # Row of chord diagrams
             for col, voicing in enumerate(entry):
-                # Hide "Root" inversion label unless --show-root is set
-                if not show_root and voicing.inversion == "Root":
-                    voicing = replace(voicing, inversion="")
-
-                # Hide finger numbers inside dots when --no-fingers is set
-                if no_fingers:
-                    voicing = replace(voicing, fingers="")
-
-                drawing = draw_chord_diagram(voicing, string_labels=string_labels)
+                drawing = draw_chord_diagram(
+                    displayed(voicing, show_root, not no_fingers),
+                    string_labels=string_labels,
+                )
 
                 c.saveState()
                 c.translate(

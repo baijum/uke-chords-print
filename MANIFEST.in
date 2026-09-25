@@ -1,0 +1,8 @@
+# The source distribution carries what the test suite needs, so it can
+# be tested after unpacking (pytest from the unpacked directory).
+include AGENTS.md pytest.ini .coveragerc requirements*.txt
+include example_chords.txt generate_catalog.sh
+graft tests
+graft catalog
+prune catalog/pdf
+global-exclude *.py[cod] __pycache__

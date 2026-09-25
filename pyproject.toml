@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "uke-chords-print"
+dynamic = ["version"]
+description = "Generate printable PDF chord diagrams for ukulele"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE", "uke_chords_print/bundled_fonts/LICENSE-*.txt"]
+authors = [{ name = "Baiju Muthukadan" }]
+keywords = ["ukulele", "chords", "chord diagrams", "pdf", "music"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Printing",
+    "Typing :: Typed",
+]
+dependencies = ["reportlab", "pychord>=1.4"]
+
+[project.optional-dependencies]
+test = ["pytest>=7", "pytest-cov"]
+
+[project.scripts]
+uke-chords-print = "uke_chords_print.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/baijum/uke-chords-print"
+Releases = "https://github.com/baijum/uke-chords-print/releases"
+Issues = "https://github.com/baijum/uke-chords-print/issues"
+
+[tool.setuptools]
+packages = ["uke_chords_print"]
+
+[tool.setuptools.package-data]
+uke_chords_print = ["py.typed", "bundled_fonts/*"]
+
+[tool.setuptools.dynamic]
+version = { attr = "uke_chords_print.__version__" }

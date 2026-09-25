@@ -16,7 +16,7 @@ import warnings
 from .chord_db import list_all_chords, lookup_chord
 from .fonts import missing_characters
 from .parser import (
-    ChordVoicing,
+    Voicing,
     ChordWarning,
     PAGE_BREAK,
     is_heading,
@@ -147,7 +147,7 @@ def main(argv: list[str] | None = None):
         return
 
     # Collect voicings from all sources
-    voicings: list[ChordVoicing] = []
+    voicings: list[Voicing] = []
 
     for path in args.files:
         try:

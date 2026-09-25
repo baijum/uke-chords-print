@@ -6,7 +6,7 @@ import pytest
 
 from uke_chords_print.parser import (
     PAGE_BREAK,
-    ChordVoicing,
+    Voicing,
     ChordWarning,
     _strip_comment,
     is_heading,
@@ -55,10 +55,11 @@ class TestFileLines:
         # Every field of the generated voicing reaches the diagram
         voicings = parse_file_line(name)
         assert voicings == [
-            ChordVoicing(
+            Voicing(
                 name=name, frets=v["frets"], fingers=v["fingers"],
                 notes=v["notes"], inversion=v["inversion"],
                 starting_fret=v.get("starting_fret", 1),
+                difficulty=v["difficulty"],
             )
             for v in generate_voicings(name)
         ]
@@ -88,7 +89,7 @@ class TestFileLines:
 
     def test_explicit_voicing_fills_labels(self):
         [v] = parse_file_line("C, 0003")
-        assert v == ChordVoicing(
+        assert v == Voicing(
             name="C", frets="0003", notes="G C E C", inversion="Root",
             starting_fret=1,
         )
@@ -432,5 +433,5 @@ class TestHelpers:
     def test_heading_sentinel(self):
         heading = make_heading("Chorus")
         assert is_heading(heading)
-        assert not is_heading(ChordVoicing(name="C", frets="0003"))
+        assert not is_heading(Voicing(name="C", frets="0003"))
         assert not is_heading(PAGE_BREAK)

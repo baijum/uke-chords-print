@@ -30,8 +30,10 @@ Text file format (one chord per line):
 
 from __future__ import annotations
 
+import os
 import re
 import warnings
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 from .chord_db import lookup_chord
@@ -44,14 +46,27 @@ class ChordWarning(UserWarning):
 
 
 @dataclass
-class ChordVoicing:
-    """A single chord voicing ready for rendering."""
+class Voicing:
+    """A single chord voicing ready for rendering.
+
+    Attributes:
+        name: Chord name shown above the diagram.
+        frets: One character per string in tuning order: 0 open, 1-9 fret,
+            X muted (e.g. "0003").
+        fingers: One character per string: 1-4, or 0/_ for no finger.
+        notes: Space-separated note names in string order ("-" if muted).
+        inversion: "Root", "1st Inv", ... or "".
+        starting_fret: First fret the diagram shows (1 = the nut).
+        difficulty: "easy", "moderate", "hard" or "very hard" for generated
+            voicings; "" for explicit ones.
+    """
     name: str
     frets: str          # e.g., "0003"
     fingers: str = ""   # e.g., "___3" or "0003"
     notes: str = ""     # e.g., "G C E C"
     inversion: str = ""  # e.g., "Root", "1st Inv"
     starting_fret: int = 1
+    difficulty: str = ""
 
 
 # Inline comment: whitespace, "#", then whitespace or end of line.
@@ -64,16 +79,16 @@ def _strip_comment(line: str) -> str:
 
 
 # Sentinel object used to signal a page break in the voicings list.
-PAGE_BREAK = ChordVoicing(name="__PAGE_BREAK__", frets="0000")
+PAGE_BREAK = Voicing(name="__PAGE_BREAK__", frets="0000")
 
 
-def make_heading(text: str) -> ChordVoicing:
+def make_heading(text: str) -> Voicing:
     """Create a heading sentinel carrying the heading text in the notes field."""
-    return ChordVoicing(name="__HEADING__", frets="0000", notes=text)
+    return Voicing(name="__HEADING__", frets="0000", notes=text)
 
 
-def is_heading(v: ChordVoicing) -> bool:
-    """Check whether a ChordVoicing is a heading sentinel."""
+def is_heading(v: Voicing) -> bool:
+    """Check whether a Voicing is a heading sentinel."""
     return v.name == "__HEADING__"
 
 
@@ -100,7 +115,7 @@ def _parse_options(extras: list[str]) -> dict:
             Empty strings (from a trailing separator) are ignored.
 
     Returns:
-        ChordVoicing keyword arguments.
+        Voicing keyword arguments.
 
     Raises:
         ValueError: On a missing "=", an unknown key, a fingers value that
@@ -141,7 +156,7 @@ def _parse_options(extras: list[str]) -> dict:
 
 def _explicit_voicing(
     name: str, frets: str, kwargs: dict, tuning: str = "standard"
-) -> ChordVoicing:
+) -> Voicing:
     """Build an explicit voicing, filling in fields that weren't given.
 
     starting_fret is derived from the frets. notes and inversion are
@@ -151,11 +166,11 @@ def _explicit_voicing(
     Args:
         name: Chord name shown above the diagram.
         frets: Validated 4-character fret string.
-        kwargs: Extra ChordVoicing fields parsed from the input.
+        kwargs: Extra Voicing fields parsed from the input.
         tuning: Tuning the shape is played in.
 
     Returns:
-        The ChordVoicing.
+        The Voicing.
 
     Raises:
         ValueError: If the fretted notes don't fit the 4 frets a diagram
@@ -196,12 +211,12 @@ def _explicit_voicing(
         else:
             kwargs.setdefault("notes", notes)
             kwargs.setdefault("inversion", inversion)
-    return ChordVoicing(name=name, frets=frets, **kwargs)
+    return Voicing(name=name, frets=frets, **kwargs)
 
 
 def parse_cli_arg(
     arg: str, single: bool = False, tuning: str = "standard"
-) -> list[ChordVoicing]:
+) -> list[Voicing]:
     """
     Parse a single CLI argument into chord voicings.
 
@@ -233,8 +248,8 @@ def parse_file_line(
     single: bool = False,
     tuning: str = "standard",
     voicing_tuning: str | None = None,
-    fallback_shapes: dict[tuple[str, str], ChordVoicing] | None = None,
-) -> list[ChordVoicing]:
+    fallback_shapes: dict[tuple[str, str], Voicing] | None = None,
+) -> list[Voicing]:
     """
     Parse a single line from a text input file.
 
@@ -303,9 +318,23 @@ def parse_file_line(
 
 
 def parse_file(
-    filepath: str, single: bool = False, tuning: str = "standard"
-) -> list[ChordVoicing]:
-    """Parse an entire text file and return all chord voicings.
+    filepath: str | os.PathLike[str],
+    single: bool = False,
+    tuning: str = "standard",
+) -> list[Voicing]:
+    """Parse a chord file (UTF-8, with or without a byte-order mark).
+
+    See parse_lines for the format, warnings and errors.
+    """
+    # utf-8-sig also accepts files saved with a byte-order mark (Notepad)
+    with open(filepath, "r", encoding="utf-8-sig") as f:
+        return parse_lines(f, single=single, tuning=tuning)
+
+
+def parse_lines(
+    lines: Iterable[str], single: bool = False, tuning: str = "standard"
+) -> list[Voicing]:
+    """Parse the lines of a chord file and return all chord voicings.
 
     Problems that don't stop the sheet (see _fallback_voicing) are issued
     as ChordWarning, prefixed with the line number.
@@ -315,40 +344,38 @@ def parse_file(
     """
     voicings = []
     voicing_tuning = None
-    fallback_shapes: dict[tuple[str, str], ChordVoicing] = {}
-    # utf-8-sig also accepts files saved with a byte-order mark (Notepad)
-    with open(filepath, "r", encoding="utf-8-sig") as f:
-        for lineno, line in enumerate(f, 1):
-            try:
-                # Tuning directive for the explicit voicings that follow
-                directive = _strip_comment(line).split()
-                if directive and directive[0] == "@tuning":
-                    if len(directive) != 2:
-                        raise ValueError("Expected '@tuning <name>'")
-                    voicing_tuning = get_tuning(directive[1]).name
-                    continue
-                with warnings.catch_warnings(record=True) as caught:
-                    warnings.simplefilter("always", ChordWarning)
-                    voicings.extend(parse_file_line(
-                        line, single=single, tuning=tuning,
-                        voicing_tuning=voicing_tuning,
-                        fallback_shapes=fallback_shapes,
-                    ))
-            except ValueError as e:
-                raise ValueError(f"Line {lineno}: {e}") from e
-            for w in caught:
-                if issubclass(w.category, ChordWarning):
-                    warnings.warn(f"Line {lineno}: {w.message}", ChordWarning)
-                else:
-                    warnings.warn_explicit(
-                        w.message, w.category, w.filename, w.lineno
-                    )
+    fallback_shapes: dict[tuple[str, str], Voicing] = {}
+    for lineno, line in enumerate(lines, 1):
+        try:
+            # Tuning directive for the explicit voicings that follow
+            directive = _strip_comment(line).split()
+            if directive and directive[0] == "@tuning":
+                if len(directive) != 2:
+                    raise ValueError("Expected '@tuning <name>'")
+                voicing_tuning = get_tuning(directive[1]).name
+                continue
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always", ChordWarning)
+                voicings.extend(parse_file_line(
+                    line, single=single, tuning=tuning,
+                    voicing_tuning=voicing_tuning,
+                    fallback_shapes=fallback_shapes,
+                ))
+        except ValueError as e:
+            raise ValueError(f"Line {lineno}: {e}") from e
+        for w in caught:
+            if issubclass(w.category, ChordWarning):
+                warnings.warn(f"Line {lineno}: {w.message}", ChordWarning)
+            else:
+                warnings.warn_explicit(
+                    w.message, w.category, w.filename, w.lineno
+                )
     return voicings
 
 
 def parse_cli_args(
     args: list[str], single: bool = False, tuning: str = "standard"
-) -> list[ChordVoicing]:
+) -> list[Voicing]:
     """Parse a list of CLI arguments into chord voicings."""
     voicings = []
     for arg in args:
@@ -361,8 +388,8 @@ def _fallback_voicing(
     frets: str,
     voicing_tuning: str,
     tuning: str,
-    chosen: dict[tuple[str, str], ChordVoicing] | None,
-) -> list[ChordVoicing]:
+    chosen: dict[tuple[str, str], Voicing] | None,
+) -> list[Voicing]:
     """Replace an explicit voicing written for another tuning.
 
     Each pinned shape of a chord gets the easiest generated voicing not
@@ -420,7 +447,7 @@ def _fallback_voicing(
 
 def _lookup_voicings(
     name: str, single: bool = False, tuning: str = "standard"
-) -> list[ChordVoicing]:
+) -> list[Voicing]:
     """Look up chord voicings from the built-in database.
 
     If single=True, return only the first (primary) voicing.
@@ -438,14 +465,17 @@ def _lookup_voicings(
         )
     if single:
         entries = entries[:1]
-    voicings = []
-    for entry in entries:
-        voicings.append(ChordVoicing(
-            name=name,
-            frets=entry["frets"],
-            fingers=entry.get("fingers", ""),
-            notes=entry.get("notes", ""),
-            inversion=entry.get("inversion", ""),
-            starting_fret=entry.get("starting_fret", 1),
-        ))
-    return voicings
+    return [voicing_from_entry(name, entry) for entry in entries]
+
+
+def voicing_from_entry(name: str, entry: dict) -> Voicing:
+    """Convert a generate_voicings() dict into a Voicing."""
+    return Voicing(
+        name=name,
+        frets=entry["frets"],
+        fingers=entry.get("fingers", ""),
+        notes=entry.get("notes", ""),
+        inversion=entry.get("inversion", ""),
+        starting_fret=entry.get("starting_fret", 1),
+        difficulty=entry.get("difficulty", ""),
+    )

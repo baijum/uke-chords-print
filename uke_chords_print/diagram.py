@@ -13,6 +13,8 @@ The diagram looks like a miniature fretboard:
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from reportlab.lib.units import mm
 from reportlab.graphics.shapes import (
     Drawing, Line, Circle, String, Group, Rect,
@@ -22,7 +24,7 @@ from reportlab.lib.colors import black, white, HexColor
 from reportlab.pdfbase.pdfmetrics import stringWidth
 
 from .fonts import centred_strings, text_width
-from .parser import ChordVoicing
+from .parser import Voicing
 
 # --- Layout constants (all in mm, converted to points) ---
 # These define the geometry of a single chord diagram. pdf_generator scales
@@ -92,8 +94,29 @@ def fit_font_size(
     return font_size * max_width / width
 
 
+def displayed(
+    voicing: Voicing, show_root: bool = False, show_fingers: bool = True
+) -> Voicing:
+    """Apply the display options: hide "Root" and/or finger numbers.
+
+    Args:
+        voicing: The voicing to show.
+        show_root: Keep a "Root" inversion label (other inversions are
+            always shown).
+        show_fingers: Keep finger numbers inside the dots.
+
+    Returns:
+        The voicing with hidden labels blanked.
+    """
+    if not show_root and voicing.inversion == "Root":
+        voicing = replace(voicing, inversion="")
+    if not show_fingers:
+        voicing = replace(voicing, fingers="")
+    return voicing
+
+
 def draw_chord_diagram(
-    voicing: ChordVoicing,
+    voicing: Voicing,
     string_labels: tuple[str, ...] | None = None,
 ) -> Drawing:
     """
