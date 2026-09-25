@@ -17,6 +17,7 @@ scripts and color emoji are not supported.
 
 from __future__ import annotations
 
+import itertools
 import os
 import shutil
 import subprocess
@@ -56,6 +57,7 @@ _CANDIDATE_FILES = [
 ]
 
 _fallback_fonts: list[str] = []            # registered names, oldest first
+_font_ids = itertools.count()               # unique registered font names
 _tried_files: set[tuple[str, int]] = set()
 _char_font: dict[tuple[str, bool], str | None] = {}
 _missing: set[str] = set()
@@ -80,7 +82,7 @@ def _register(path: str, index: int) -> str | None:
     if (path, index) in _tried_files:
         return None
     _tried_files.add((path, index))
-    name = f"UkeFallback{len(_fallback_fonts)}"
+    name = f"UkeFallback{next(_font_ids)}"
     try:
         pdfmetrics.registerFont(TTFont(name, path, subfontIndex=index))
     except Exception:  # CFF outlines, unreadable file, bad collection index

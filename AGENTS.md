@@ -20,8 +20,9 @@ database, despite the `chord_db` module name.
 - No `pyproject.toml`/`setup.py`: the tool is run as a module, not installed.
 - pytest suite in `tests/` (dev deps in `requirements-dev.txt`), run by
   GitHub Actions (`.github/workflows/tests.yml`) on Python 3.11–3.14 for
-  every push and pull request, together with `./generate_catalog.sh`. No
-  linter or formatter config.
+  every push and pull request, with coverage (100% line and branch
+  required, `.coveragerc`) and `./generate_catalog.sh`. No linter or
+  formatter config.
 
 ## Commands
 
@@ -31,6 +32,7 @@ pip install -r requirements-dev.txt
 # Run the tests (~10 s)
 python3 -m pytest
 python3 -m pytest tests/test_parser.py -k tuning   # a subset
+python3 -m pytest --cov   # coverage report; CI fails below 100%
 
 # Run the CLI
 python3 -m uke_chords_print C Am G7 F -t "Title" -o out.pdf
@@ -202,20 +204,31 @@ README; don't "fix" the JSON.
 | `test_chords_db_reference.py` | Dataset integrity; the generator finds every chart shape it should; canonical shapes are offered; fingering and labels on all 2,114 shapes |
 | `test_voicing_gen.py` | Properties of every standard chord in every tuning; transposition between tunings (D = standard + 2, baritone = low-G − 5); helper unit tests |
 | `test_parser.py`, `test_chord_db.py` | Input formats, options, `@tuning`, lookup and aliases |
-| `test_rendering.py`, `test_fonts.py` | Pagination, PDF content (via `support.pdf_text`), diagram geometry, font fallback |
+| `test_rendering.py`, `test_fonts.py` | Pagination, PDF content (via `support.pdf_text`), diagram geometry from the layout constants, page layout via a recording canvas (margins, overlap, grid, title/headings/footers), font fallback including mocked fontconfig |
 | `test_cli.py`, `test_catalog.py` | End-to-end CLI; every catalog file in every tuning and its pinned shapes |
 
 `pytest.ini` sets `xfail_strict`: known gaps are `xfail` with a reason, and
 fixing one makes its test fail until the marker is removed. Scoring
 changes show up in `test_canonical_shape_is_offered`,
 `test_canonical_shape_is_usually_primary`,
-`test_canonical_shape_is_primary_in_every_key` and
-`test_beginner_chords_are_primary`; update their expectations only for
-a deliberate recalibration.
+`test_canonical_shape_is_primary_in_every_key`,
+`test_beginner_chords_are_primary` and `TestDifficulty.test_exact_scores`
+(one exact score per weight); update their expectations only for a
+deliberate recalibration.
+
+Coverage shows what runs, not what's checked. To find code whose
+behavior no test pins down, run mutmut on a copy of the repo (it writes a
+`mutants/` directory): add `[tool.mutmut]` with
+`source_paths = ["uke_chords_print/"]` and
+`also_copy = ["catalog/", "generate_catalog.sh", "pytest.ini", "tests/"]`
+to a scratch `pyproject.toml`, then `mutmut run` and `mutmut results`
+(~25 min). Expect survivors in colours, stroke widths and help text.
 
 ## Verifying changes
 
-Run `python3 -m pytest`, and add tests for new behavior. Then:
+Run `python3 -m pytest --cov`, and add tests for new behavior: CI requires
+100% line and branch coverage, so every new branch needs a test that
+checks its result (not just one that runs it). Then:
 
 1. Call `generate_voicings` / `lookup_chord` for a few chords across tunings
    (e.g. `C`, `F#m7`, `Bbdim`, `E` in `standard`, `low-g`, `baritone`) and

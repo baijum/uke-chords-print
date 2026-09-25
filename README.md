@@ -296,7 +296,7 @@ uke-chords-print/
     data/chords-db/      # Reference chord shapes (chords-db, MIT)
   example_chords.txt     # Sample input file
   requirements.txt       # Python dependencies
-  requirements-dev.txt   # + pytest
+  requirements-dev.txt   # + pytest, pytest-cov
 ```
 
 ## How the Voicing Generator Works
@@ -313,17 +313,18 @@ The generator uses [pychord](https://github.com/yuma-m/pychord) for music theory
 
 ```bash
 pip install -r requirements-dev.txt
-python3 -m pytest
+python3 -m pytest          # ~10 s
+python3 -m pytest --cov    # with line and branch coverage (must stay at 100%)
 ```
 
-The suite (about 9,000 tests, around 10 seconds) checks the generator against two independent references:
+The suite (about 10,000 tests) checks the generator against two independent references:
 
 - **Interval formulas** for 46 chord types, written out by hand in `tests/support.py`
 - **[chords-db](https://github.com/tombatossals/chords-db)**, 2,114 hand-compiled ukulele shapes, vendored at a pinned commit in `tests/data/chords-db/` (see its README for errata found in the data)
 
 It also covers properties of every generated voicing in all four tunings, parsing, PDF layout, font fallback, the CLI, and the catalog files. Known gaps are marked `xfail`; they pass once fixed and then fail, which is a reminder to remove the marker.
 
-[GitHub Actions](.github/workflows/tests.yml) runs the suite on Python 3.11–3.14 for every push and pull request, and builds every catalog PDF (downloadable from the run as the `catalog-pdfs` artifact).
+[GitHub Actions](.github/workflows/tests.yml) runs the suite with coverage on Python 3.11–3.14 for every push and pull request (failing below 100% line and branch coverage, see `.coveragerc`), and builds every catalog PDF (downloadable from the run as the `catalog-pdfs` artifact).
 
 ## License
 

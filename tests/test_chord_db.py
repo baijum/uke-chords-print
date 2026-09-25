@@ -48,6 +48,28 @@ def test_alias_used_when_name_fails(monkeypatch):
     assert calls == ["Db", "C#"]
 
 
+@pytest.mark.parametrize("alias_result", [[], ValueError("alias")])
+def test_alias_failure_keeps_original_error(monkeypatch, alias_result):
+    def fake_generate(name, tuning):
+        if name == "Db":
+            raise ValueError("original")
+        if isinstance(alias_result, Exception):
+            raise alias_result
+        return alias_result
+
+    monkeypatch.setattr(chord_db, "generate_voicings", fake_generate)
+    with pytest.raises(ValueError, match="original"):
+        lookup_chord("Db")
+
+
+def test_alias_not_tried_for_other_names(monkeypatch):
+    calls = []
+    monkeypatch.setattr(chord_db, "generate_voicings",
+                        lambda name, tuning: calls.append(name) or [])
+    assert lookup_chord("C") is None
+    assert calls == ["C"]
+
+
 def test_unknown_name_raises_original_error():
     with pytest.raises(ValueError, match="Cannot parse chord 'Cxyz'"):
         lookup_chord("Cxyz")

@@ -55,10 +55,17 @@ _EXTRA_QUALITIES: dict[str, tuple[str, ...]] = {
     "7#9b13": ("1", "3", "5", "b7", "#9", "b13"),
     "13b5b9": ("1", "3", "b5", "b7", "b9", "13"),
 }
-_quality_manager = QualityManager()
-for _name, _intervals in _EXTRA_QUALITIES.items():
-    if _name not in _quality_manager.get_qualities():
-        _quality_manager.set_quality(_name, _intervals)
+
+
+def _register_extra_qualities() -> None:
+    """Add _EXTRA_QUALITIES to pychord, leaving any it already defines."""
+    manager = QualityManager()
+    for name, intervals in _EXTRA_QUALITIES.items():
+        if name not in manager.get_qualities():
+            manager.set_quality(name, intervals)
+
+
+_register_extra_qualities()
 
 # Chord-chart spellings pychord doesn't know, applied in order to a quality
 # (the part after the root, before any /bass) only if pychord rejects it

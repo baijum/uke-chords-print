@@ -77,6 +77,13 @@ EQUIVALENT_SPELLINGS = [
     ("Cmi7", "Cm7"),
     ("C-7", "Cm7"),
     ("Cm/maj7", "CmM7"),
+    ("Cm/Maj7", "CmM7"),
+    ("Cm/ma7", "CmM7"),
+    ("Cm/M7", "CmM7"),
+    ("Cm/Δ", "CmM7"),
+    ("Cm/Δ7", "CmM7"),
+    ("Cmin/maj7", "CmM7"),
+    ("C-/maj7", "CmM7"),
     ("Cm(maj7)", "CmM7"),
     ("CmΔ7", "CmM7"),
     ("Cmmaj7", "CmM7"),
@@ -131,6 +138,10 @@ def test_equivalent_spellings(spelling, canonical):
     "name", STANDARD_CHORDS + [
         r + FORMULAS[s].quality for r in ("C", "F#") for s in SUPPORTED
         if _known_quality(FORMULAS[s].quality)
+    ] + [
+        # pychord's own spellings that a respelling rule would also match
+        "Cmin", "C-", "CM7", "CM9", "Cmaj", "Csus", "C7+5", "C7-5",
+        "Cmin/G", "C-/E",
     ]
 )
 def test_pychord_names_pass_through_unchanged(name):
@@ -185,5 +196,5 @@ def test_note_to_pc_enharmonics(name, pc):
 
 
 def test_note_to_pc_rejects_unknown():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="^Unknown note name: 'H'$"):
         _note_to_pc("H")

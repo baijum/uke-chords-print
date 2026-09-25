@@ -31,6 +31,39 @@ def run(tmp_path, capsys):
     return run
 
 
+def test_defaults():
+    from uke_chords_print.cli import build_parser
+    args = build_parser().parse_args([])
+    assert vars(args) == {
+        "chords": [], "files": [], "output": "chords.pdf", "title": "",
+        "paper": "a4", "cols": 4, "rows": 4, "list_chords": False,
+        "show_root": False, "single": False, "no_fingers": False,
+        "tuning": "standard",
+    }
+
+
+def test_short_flags():
+    from uke_chords_print.cli import build_parser
+    args = build_parser().parse_args(
+        ["-f", "a.txt", "--file", "b.txt", "-o", "x.pdf", "-t", "T", "Am"])
+    assert (args.files, args.output, args.title, args.chords) == (
+        ["a.txt", "b.txt"], "x.pdf", "T", ["Am"])
+
+
+def test_options_reach_the_pdf(run):
+    code, _, _, pdf = run("F:2010:fingers=2010", "G:0003", "C", "--single",
+                          "--paper", "letter", "--cols", "1", "--rows", "1",
+                          "--no-fingers", "--tuning", "baritone")
+    assert code == 0
+    data = pdf.read_bytes()
+    assert b"/MediaBox [ 0 0 612 792 ]" in data     # letter
+    assert pdf_page_count(data) == 3                  # 1 x 1 grid
+    text = pdf_text(data)
+    assert "(2) Tj" not in text                       # no finger numbers
+    assert "(D) Tj" in text and "(B) Tj" in text      # G:0003 in baritone
+    assert "\\(D-G-B-E\\)) Tj" in text                 # tuning labels
+
+
 def test_chord_names(run):
     code, out, err, pdf = run("C", "Am", "G7", "F", "--single")
     assert code == 0
@@ -78,14 +111,20 @@ def test_tunings(run, tuning):
 def test_list(run):
     code, out, _, _ = run("--list")
     assert code == 0
-    assert "[standard (G-C-E-A)]" in out
-    assert "Total: 108 chords" in out
-    assert "  C          3 voicings" in out
+    lines = out.splitlines()
+    assert lines[0] == ("Built-in ukulele chord database "
+                        "[standard (G-C-E-A)]:")
+    assert lines[1] == "=" * 60
+    assert "  C          3 voicings   [0003, 0403, 0433]" in lines
+    assert "  Ddim       1 voicing    [7545]" in lines  # singular
+    assert lines[-1] == "Total: 108 chords"
+    assert len(lines) == 2 + 108 + 2
 
 
 def test_list_other_tuning(run):
     _, out, _, _ = run("--list", "--tuning", "baritone")
     assert "[baritone (D-G-B-E)]" in out
+    assert "  G          3 voicings   [0003," in out  # baritone shapes
 
 
 @pytest.mark.parametrize("args, message", [
@@ -98,7 +137,11 @@ def test_list_other_tuning(run):
 def test_errors_exit_1(run, args, message):
     code, out, err, _ = run(*args)
     assert code == 1
-    assert message in out + err
+    if args:
+        assert message in err and out == ""  # errors go to stderr
+    else:
+        assert out == ("No chords specified. Use chord names, --file, or "
+                       "--list.\nRun with --help for usage information.\n")
 
 
 def test_headings_only_is_no_chords(run, tmp_path):
@@ -142,10 +185,10 @@ def test_bad_tuning_rejected_by_argparse(run):
 def test_warns_about_unprintable_characters(run, monkeypatch):
     monkeypatch.setattr(fonts, "_fc_match", lambda ch, bold: None)
     monkeypatch.setattr(fonts, "_CANDIDATE_FILES", [])
-    code, _, err, _ = run("C", "-t", "Song \U0010FFFC")
+    code, _, err, _ = run("C", "-t", "Song \U0010FFFD\U0010FFFC")
     assert code == 0
-    assert "Warning: no available font can show" in err
-    assert "\U0010FFFC" in err
+    assert err == ("Warning: no available font can show "
+                   "\U0010FFFC \U0010FFFD; they print as boxes.\n")
 
 
 def test_module_entry_point(tmp_path):
@@ -154,6 +197,17 @@ def test_module_entry_point(tmp_path):
         cwd=REPO_ROOT, capture_output=True, text=True, check=True,
     )
     assert "usage: uke-chords-print" in result.stdout
+
+
+# runpy notes that the cli module was already imported; that's expected
+@pytest.mark.filterwarnings("ignore:.*found in sys.modules:RuntimeWarning")
+@pytest.mark.parametrize("module", ["uke_chords_print",
+                                    "uke_chords_print.cli"])
+def test_entry_points_in_process(module, monkeypatch, capsys):
+    import runpy
+    monkeypatch.setattr(sys, "argv", ["uke-chords-print", "--list"])
+    runpy.run_module(module, run_name="__main__", alter_sys=True)
+    assert "Total: 108 chords" in capsys.readouterr().out
 
 
 def test_version_is_semver():

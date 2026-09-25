@@ -9,8 +9,12 @@ import pytest
 
 from uke_chords_print.chord_db import STANDARD_CHORDS
 from uke_chords_print.tunings import get_tuning_midi
+from pychord import QualityManager
+
 from uke_chords_print.voicing_gen import (
+    _EXTRA_QUALITIES,
     _assign_fingers,
+    _register_extra_qualities,
     _difficulty_label,
     _finger_units,
     _note_to_pc,
@@ -162,9 +166,20 @@ class TestSearchLimits:
         with pytest.raises(ValueError, match="Cannot parse chord"):
             generate_voicings("Cxyz")
 
+    def test_open_position_voicings_omit_starting_fret(self):
+        voicings = generate_voicings("C", max_results=100)
+        assert "starting_fret" not in voicings[0]  # 0003
+        for v in voicings:
+            start = compute_starting_fret(_frets(v))
+            assert ("starting_fret" in v) == (start > 1)
+
     def test_unknown_tuning(self):
-        with pytest.raises(ValueError, match="Unknown tuning"):
+        with pytest.raises(ValueError) as exc:
             generate_voicings("C", tuning="banjo")
+        assert str(exc.value) == (
+            "Unknown tuning 'banjo'. Valid options: adf#b, baritone, "
+            "d-tuning, dgbe, gcea, gcea-low, high-g, linear, low-g, standard"
+        )
 
 
 class TestSlashChords:
@@ -246,6 +261,11 @@ class TestRequiredTones:
         ("C13b9", {"E", "Bb", "Db", "A"}),
         ("C7#9b13", {"E", "Bb", "D#", "Ab"}),
         ("Cmaj11", {"C", "E", "B", "F"}),
+        # The root as the bass can't be dropped: the 3rd, 7th and 13th stay
+        ("C13/C", {"C", "E", "Bb", "A"}),
+        # Altered tones go from the top down: b9 before b5
+        ("C13b5b9", {"E", "Gb", "Bb", "A"}),
+        ("C9b5/C", {"C", "E", "Bb", "D"}),
     ])
     def test_tones_kept(self, chord, tones):
         assert self._required(chord) == tones
@@ -259,6 +279,37 @@ class TestRequiredTones:
     def test_more_strings(self):
         assert _required_pcs([0, 4, 7, 10, 2], 0, max_tones=5) == {
             0, 4, 7, 10, 2}
+
+
+class TestExtraQualities:
+    def test_registered_with_pychord(self):
+        qualities = QualityManager().get_qualities()
+        assert set(_EXTRA_QUALITIES) <= set(qualities)
+
+    @pytest.mark.parametrize("quality, notes", [
+        ("maj7b5", ["C", "E", "Gb", "B"]),
+        ("mM9", ["C", "Eb", "G", "B", "D"]),
+        ("13b5b9", ["C", "E", "Gb", "Bb", "Db", "A"]),
+    ])
+    def test_missing_quality_is_registered(self, monkeypatch, quality, notes):
+        from pychord import Chord
+        qualities = QualityManager()._qualities
+        monkeypatch.delitem(qualities, quality)
+        with pytest.raises(ValueError):
+            Chord("C" + quality)
+        _register_extra_qualities()
+        assert Chord("C" + quality).components() == notes
+
+    def test_pychord_definitions_win(self, monkeypatch):
+        # Registering again (or after pychord adds one) changes nothing
+        manager = QualityManager()
+        before = {q: manager.get_quality(q) for q in _EXTRA_QUALITIES}
+        set_calls = []
+        monkeypatch.setattr(type(manager), "set_quality",
+                            lambda self, *a: set_calls.append(a))
+        _register_extra_qualities()
+        assert set_calls == []
+        assert {q: manager.get_quality(q) for q in _EXTRA_QUALITIES} == before
 
 
 class TestFingering:
@@ -279,6 +330,8 @@ class TestFingering:
         ("1111", "1111"),
         ("7777", "1111"),
         ("0007", "0001"),   # high lone note: index, not finger 7
+        ("0004", "0004"),   # lone note on fret 4: still the matching finger
+        ("0005", "0001"),   # fret 5 is past open position: index
         ("0000", "0000"),
     ])
     def test_assign_fingers(self, frets, fingers):
@@ -304,6 +357,8 @@ class TestStartingFret:
         ((0, 0, 0, 3), 1),
         ((2, 4, 3, 1), 1),
         ((0, 0, 0, 5), 5),
+        ((0, 4, 4, 4), 1),    # fret 4 is still open position
+        ((1, 0, 0, 5), 1),    # a note on fret 1 keeps the window at the nut
         ((5, 4, 3, 3), 3),
         ((0, 7, 8, 7), 7),
         ((-1, 0, 0, 7), 7),   # muted strings are ignored
@@ -314,6 +369,30 @@ class TestStartingFret:
 
 
 class TestDifficulty:
+    # Exact scores pin every weight in _score_voicing: a deliberate
+    # recalibration must update this table (and see AGENTS.md)
+    @pytest.mark.parametrize("frets, score", [
+        ("0003", 1.5),       # one finger, three open strings
+        ("0001", 0.0),       # negative raw score clamps to 0
+        ("2000", 0.0),
+        ("0232", 26 / 3),    # span, fingers, one open string
+        ("0432", 14.5),
+        ("0402", 15.0),      # open string between fretted ones: +4
+        ("2010", 8.0),
+        ("3211", 16.5),      # barre (1 1) counted once
+        ("2222", 10.0),      # compact 4-string barre
+        ("2413", 19.0),
+        ("1004", 21.5),      # 3-fret gap: independence penalty 1.5
+        ("1005", 36.0),      # 4-fret gap, arched strings, shifted
+        ("5500", 20.0),      # open strings above first position: +1.5 each
+        ("5555", 20.0),      # leaving first position: +4
+        ("7777", 24.0),
+        ("0066", 22.0),
+    ])
+    def test_exact_scores(self, frets, score):
+        assert _score_voicing(tuple(int(c) for c in frets)) == pytest.approx(
+            score)
+
     def test_all_open_is_easiest(self):
         assert _score_voicing((0, 0, 0, 0)) == 0.0
 

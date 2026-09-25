@@ -1,0 +1,8 @@
+[run]
+source = uke_chords_print
+branch = True
+
+[report]
+show_missing = True
+skip_covered = True
+fail_under = 100

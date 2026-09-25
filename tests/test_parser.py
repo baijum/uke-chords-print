@@ -50,12 +50,19 @@ class TestComments:
 
 
 class TestFileLines:
-    def test_chord_name_gives_generated_voicings(self):
-        voicings = parse_file_line("Am")
-        assert [v.frets for v in voicings] == [
-            v["frets"] for v in generate_voicings("Am")
+    @pytest.mark.parametrize("name", ["Am", "C#m7", "F", "Cdim"])
+    def test_chord_name_gives_generated_voicings(self, name):
+        # Every field of the generated voicing reaches the diagram
+        voicings = parse_file_line(name)
+        assert voicings == [
+            ChordVoicing(
+                name=name, frets=v["frets"], fingers=v["fingers"],
+                notes=v["notes"], inversion=v["inversion"],
+                starting_fret=v.get("starting_fret", 1),
+            )
+            for v in generate_voicings(name)
         ]
-        assert all(v.name == "Am" for v in voicings)
+        assert any(v.starting_fret > 1 for v in parse_file_line("Cdim"))
 
     def test_single(self):
         assert len(parse_file_line("Am", single=True)) == 1
@@ -76,7 +83,7 @@ class TestFileLines:
 
     @pytest.mark.parametrize("line", ["=", "= ", "=   # comment"])
     def test_empty_heading(self, line):
-        with pytest.raises(ValueError, match="Heading text missing"):
+        with pytest.raises(ValueError, match="^Heading text missing after '='$"):
             parse_file_line(line)
 
     def test_explicit_voicing_fills_labels(self):
@@ -97,6 +104,34 @@ class TestFileLines:
     def test_trailing_comma_ignored(self):
         [v] = parse_file_line("C, 0003, fingers=0003,")
         assert v.fingers == "0003"
+
+    def test_empty_option_between_others_skipped(self):
+        [v] = parse_file_line("C, 0003,, fingers=0003")
+        assert v.fingers == "0003"
+
+    def test_option_value_may_contain_equals(self):
+        [v] = parse_file_line("C, 0003, inversion=Root=I")
+        assert v.inversion == "Root=I"
+
+    def test_notes_given_inversion_worked_out(self):
+        [v] = parse_file_line("C, 0003, notes=w x y z")
+        assert (v.notes, v.inversion) == ("w x y z", "Root")
+
+    def test_inversion_given_notes_worked_out(self):
+        [v] = parse_file_line("C, 0003, inversion=Custom")
+        assert (v.notes, v.inversion) == ("G C E C", "Custom")
+
+    def test_starting_fret_one_is_valid(self):
+        [v] = parse_file_line("C, 0003, starting_fret=1")
+        assert v.starting_fret == 1
+
+    def test_unknown_option_lists_valid_ones(self):
+        with pytest.raises(ValueError) as exc:
+            parse_file_line("C, 0003, color=red")
+        assert str(exc.value) == (
+            "Unknown option 'color'. "
+            "Valid options: fingers, starting_fret, notes, inversion"
+        )
 
     def test_muted_string(self):
         [v] = parse_file_line("C, X003")
@@ -130,12 +165,15 @@ class TestFileLines:
         ("C, 0003, finger=0003", "Unknown option 'finger'"),
         ("C, 0003, fingers=003", "Invalid fingers"),
         ("C, 0003, fingers=0005", "Invalid fingers"),
+        ("C, 0003, fingers=000X", "Invalid fingers"),
         ("C, 0003, starting_fret=0", "Invalid starting_fret"),
         ("C, 0003, starting_fret=x", "Invalid starting_fret"),
         ("C, 0003, starting_fret=²", "Invalid starting_fret"),
         ("C, 0019", "don't fit the 4 frets"),
         ("C, 5433, starting_fret=4", "don't fit the 4 frets"),
         ("C, 1006", "don't fit the 4 frets"),
+        ("C, 0005, starting_fret=1", "don't fit the 4 frets"),  # 1-4 shown
+        ("C, 1000, starting_fret=2", "don't fit the 4 frets"),  # below
     ])
     def test_invalid_explicit_voicings(self, line, message):
         with pytest.raises(ValueError, match=message):
@@ -179,6 +217,16 @@ class TestCliArgs:
         [v] = parse_cli_arg("G", single=True, tuning="baritone")
         assert v.frets == "0003"
 
+    def test_all_voicings_by_default(self):
+        assert len(parse_cli_arg("C")) == 3
+        assert len(parse_cli_args(["C"])) == 3
+
+    def test_explicit_labels_follow_tuning(self):
+        [v] = parse_cli_arg("G:0003", tuning="baritone")
+        assert v.notes == "D G B G"
+        [v] = parse_cli_args(["G:0003"], tuning="baritone")
+        assert v.notes == "D G B G"
+
 
 class TestParseFile:
     def test_mixed_content(self, chord_file):
@@ -196,6 +244,9 @@ class TestParseFile:
             "__HEADING__", "C", "G", "__PAGE_BREAK__", "Am7",
         ]
         assert voicings[3] is PAGE_BREAK
+
+    def test_all_voicings_by_default(self, chord_file):
+        assert len(parse_file(chord_file("C\n"))) == 3
 
     def test_byte_order_mark(self, chord_file):
         path = chord_file("C\n", encoding="utf-8-sig")
@@ -258,11 +309,24 @@ class TestTuningDirective:
         assert e_shapes[0] != e_shapes[1]
         assert e_shapes[2] == e_shapes[0]
 
-    def test_all_muted_shape_kept(self, chord_file, recwarn):
-        path = chord_file("@tuning standard\nN.C., XXXX\n")
+    @pytest.mark.parametrize("frets", ["XXXX", "xxxx", "xXxX"])
+    def test_all_muted_shape_kept(self, chord_file, recwarn, frets):
+        path = chord_file(f"@tuning standard\nN.C., {frets}\n")
         [v] = parse_file(path, tuning="baritone")
-        assert (v.name, v.frets) == ("N.C.", "XXXX")
+        assert (v.name, v.frets) == ("N.C.", frets)
         assert not recwarn.list
+
+    def test_muted_letter_case_is_one_shape(self, chord_file):
+        path = chord_file("@tuning standard\nC, X003\nC, x003\n")
+        first, second = parse_file(path, tuning="baritone")
+        assert first.frets == second.frets
+
+    def test_more_shapes_than_voicings_reuse_the_easiest(self, chord_file):
+        # Cdim has a single baritone voicing: every pinned shape gets it
+        assert len(generate_voicings("Cdim", tuning="baritone")) == 1
+        path = chord_file("@tuning standard\nCdim, 5323\nCdim, 8089\n")
+        first, second = parse_file(path, tuning="baritone")
+        assert first.frets == second.frets
 
     def test_non_chord_name_kept_with_warning(self, chord_file):
         path = chord_file(
@@ -276,12 +340,38 @@ class TestTuningDirective:
         assert riff.frets == "0003"
         assert riff.notes == ""  # standard-tuning labels are dropped
 
+    def test_kept_shape_drops_pinned_inversion(self, chord_file):
+        path = chord_file("@tuning standard\nFmaj9, 0000, inversion=Root\n")
+        with pytest.warns(ChordWarning):
+            [v] = parse_file(path, tuning="d-tuning")
+        assert v.inversion == ""  # worked out for D tuning: B isn't in Fmaj9
+
     def test_unplayable_chord_kept_with_warning(self, chord_file):
         path = chord_file("@tuning standard\nFmaj9, 0000\n")
         with pytest.warns(ChordWarning, match="no playable d-tuning voicing"):
             [v] = parse_file(path, tuning="d-tuning")
         assert v.frets == "0000"
         assert v.notes == "A D Gb B"  # labelled for the tuning printed
+
+    def test_other_warnings_pass_through(self, chord_file, monkeypatch):
+        from uke_chords_print import parser
+
+        original = parser.parse_file_line
+
+        def noisy(line, **kwargs):
+            import warnings
+            warnings.warn("from a dependency", DeprecationWarning)
+            return original(line, **kwargs)
+
+        monkeypatch.setattr(parser, "parse_file_line", noisy)
+        with pytest.warns(DeprecationWarning, match="^from a dependency$"):
+            parse_file(chord_file("C\n"), single=True)
+
+    def test_line_without_file_bookkeeping(self):
+        # parse_file_line alone (no fallback_shapes) still converts
+        [v] = parse_file_line("C, 0003", tuning="baritone",
+                              voicing_tuning="standard")
+        assert v.frets == generate_voicings("C", tuning="baritone")[0]["frets"]
 
     def test_alias_and_comment(self, chord_file):
         path = chord_file("@tuning gcea  # shapes below\nC, 0003\n")
