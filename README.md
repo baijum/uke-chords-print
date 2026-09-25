@@ -120,7 +120,7 @@ Em
 | Frets | No | `0003` | 4-character string, one fret per string in tuning order |
 | `fingers=` | No | `fingers=0003` | Finger to use (1-4, `0` = open) |
 | `notes=` | No | `notes=G C E C` | Note names shown below the fretboard |
-| `starting_fret=` | No | `starting_fret=5` | First fret shown on diagram |
+| `starting_fret=` | No | `starting_fret=5` | First fret shown on diagram (derived from the frets when omitted; the shape must fit the 4 frets shown) |
 | `inversion=` | No | `inversion=Root` | Inversion label |
 
 The optional `@tuning <name>` line says which tuning the explicit voicings after it were written for. When you print with a `--tuning` whose shapes differ (e.g. `@tuning standard` printed with `--tuning baritone`), those lines are replaced by the easiest generated voicing for the chord name. Standard and low-G share shapes, so explicit voicings are kept between them. Without `@tuning`, explicit voicings are always used as written. The bundled catalog files declare `@tuning standard`.
@@ -142,6 +142,8 @@ The voicing generator supports **108 standard chords** (12 roots x 9 qualities),
 | **Augmented** | Caug | Caug ... Baug |
 | **Suspended 2nd** | Dsus2 | Csus2 ... Bsus2 |
 | **Suspended 4th** | Gsus4 | Csus4 ... Bsus4 |
+
+Other chords pychord understands work too. Chords with more than four notes (9ths, 11ths, 13ths, `6/9`) drop the 5th first, then inner extensions, since a ukulele has only four strings -- e.g. `C9` is voiced as C-E-Bb-D and `C13` as C-E-Bb-A.
 
 Enharmonic aliases are supported: `Db` = `C#`, `Gb` = `F#`, `Ab` = `G#`, `Bb` = `A#`, etc.
 
@@ -286,7 +288,7 @@ The generator uses [pychord](https://github.com/yuma-m/pychord) for music theory
 
 1. **Resolve notes** -- `pychord.Chord("Am7").components()` returns `['A', 'C', 'E', 'G']`
 2. **Search fretboard** -- iterate valid fret combinations on all 4 strings (frets 0-9)
-3. **Filter** -- all notes must be chord tones, all chord tones must be present, fret span <= 3
+3. **Filter** -- all notes must be chord tones, all required chord tones must be present (chords with 5+ notes omit the 5th, then inner extensions), fret span <= 3
 4. **Score** -- rank by 7-factor difficulty heuristic
 5. **Return** -- top 3 voicings, easiest first
 

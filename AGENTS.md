@@ -53,9 +53,9 @@ cli.py ──► parser.py ──► chord_db.py ──► voicing_gen.py ──
 | `cli.py` | argparse, collects voicings from each `--file` (repeatable, in order) then positional args, calls `generate_pdf`. |
 | `parser.py` | `ChordVoicing` dataclass; parses CLI args (`name:frets:key=val`) and file lines (`name, frets, key=val`); page-break / heading sentinels. |
 | `chord_db.py` | `lookup_chord()` wraps the generator and retries with enharmonic `CHORD_ALIASES`; `STANDARD_CHORDS` (12 roots × 9 qualities = 108) backs `--list`. |
-| `voicing_gen.py` | Chord → pitch classes → search frets 0–9 on 4 strings → filter (all chord tones present, span ≤ 3) → score → top 3. Also finger assignment and inversion detection. |
+| `voicing_gen.py` | Chord → pitch classes → search frets 0–9 on 4 strings → filter (required chord tones present — 5+ note chords drop the 5th, then inner extensions; span ≤ 3) → score → top 3. Also finger assignment and inversion detection. |
 | `tunings.py` | `Tuning` dataclass + `TUNINGS` dict (MIDI notes per string, labels, aliases). `TUNING_CHOICES` feeds argparse. |
-| `pdf_generator.py` | Grid layout, title, section headings, page breaks, page numbers. Scales each diagram to fit its cell. |
+| `pdf_generator.py` | `_paginate` splits voicings into pages of headings and rows (max `rows` rows per page, no empty pages), then draws them. Cell height reserves room for the title and the most headings on any page, so every page fits all its rows at one diagram size. |
 | `diagram.py` | Draws a single fretboard (nut/`Nfr` label, dots with finger numbers, open/mute markers, notes, fret string, inversion). Geometry constants in mm at the top. |
 
 ### Voicing representation
@@ -71,7 +71,9 @@ Generator output is a dict; the parser converts it into `ChordVoicing`:
   **MIDI pitch**, not the leftmost string — matters for re-entrant tunings
   (standard high-G, d-tuning).
 - `starting_fret`: 1 = open position (nut drawn); >1 draws an `Nfr` label and
-  offsets dots.
+  offsets dots. Explicit voicings derive it via `compute_starting_fret` when
+  omitted, and the parser rejects shapes that don't fit the 4 frets shown
+  (the diagram would otherwise clamp dots silently).
 - `difficulty` is produced by the generator but dropped by the parser; it is
   not rendered.
 

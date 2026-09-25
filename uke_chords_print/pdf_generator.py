@@ -37,6 +37,56 @@ PAGE_SIZES = {
 }
 
 
+def _paginate(
+    voicings: list[ChordVoicing], cols: int, rows: int
+) -> list[list[ChordVoicing | list[ChordVoicing]]]:
+    """Split voicings into pages of headings and rows of diagrams.
+
+    Each page holds at most `rows` rows plus any headings. A heading always
+    starts a new row and moves to the next page when no row would fit
+    after it. Pages are only created when something is drawn on them, so
+    leading, trailing, or repeated page breaks never produce blank pages.
+
+    Args:
+        voicings: Chord voicings, headings, and PAGE_BREAK sentinels.
+        cols: Diagrams per row.
+        rows: Rows per page.
+
+    Returns:
+        List of pages; each page is a list of heading voicings and rows
+        (lists of chord voicings), in drawing order.
+    """
+    pages: list[list] = []
+    page: list | None = None
+    row: list | None = None
+    page_rows = 0
+
+    for voicing in voicings:
+        if voicing is PAGE_BREAK:
+            page = None  # the next item starts a fresh page
+            continue
+
+        needs_row = not is_heading(voicing) and (row is None or len(row) >= cols)
+        if page is None or ((is_heading(voicing) or needs_row) and page_rows >= rows):
+            page = []
+            pages.append(page)
+            row = None
+            page_rows = 0
+
+        if is_heading(voicing):
+            page.append(voicing)
+            row = None
+            continue
+
+        if row is None or len(row) >= cols:
+            row = []
+            page.append(row)
+            page_rows += 1
+        row.append(voicing)
+
+    return pages or [[]]
+
+
 def generate_pdf(
     voicings: list[ChordVoicing],
     output_path: str = "chords.pdf",
@@ -64,7 +114,13 @@ def generate_pdf(
 
     Returns:
         The output file path.
+
+    Raises:
+        ValueError: If the grid is empty or headings leave no room for rows.
     """
+    if cols < 1 or rows < 1:
+        raise ValueError("cols and rows must be at least 1")
+
     page_size = PAGE_SIZES.get(paper.lower(), A4)
     page_width, page_height = page_size
 
@@ -73,44 +129,49 @@ def generate_pdf(
     # Only show string labels for non-standard tunings (baritone has different labels)
     string_labels = tuning_obj.string_labels if tuning_obj.name != "standard" else None
 
+    pages = _paginate(voicings, cols, rows)
+
     # Calculate available space
     usable_width = page_width - MARGIN_LEFT - MARGIN_RIGHT
     usable_height = page_height - MARGIN_TOP - MARGIN_BOTTOM
 
+    # Reserve room for the title and for the most headings any page has,
+    # so every page fits all its rows at one consistent diagram size.
+    reserved = max(
+        (TITLE_HEIGHT if title and i == 0 else 0)
+        + HEADING_HEIGHT * sum(1 for entry in page if not isinstance(entry, list))
+        for i, page in enumerate(pages)
+    )
+
     # Calculate cell size (space allocated to each diagram)
     cell_width = usable_width / cols
-    cell_height = usable_height / rows
+    cell_height = (usable_height - reserved) / rows
+    if cell_height <= 0:
+        raise ValueError("Too many headings on one page to fit any chords")
 
     # Scale factor to fit diagram into cell
     scale_x = cell_width / DIAGRAM_WIDTH
     scale_y = cell_height / DIAGRAM_HEIGHT
     scale = min(scale_x, scale_y) * 0.98  # slight margin within cell
 
+    # Center the diagram within the cell
+    x_offset = (cell_width - DIAGRAM_WIDTH * scale) / 2
+    y_offset = (cell_height - DIAGRAM_HEIGHT * scale) / 2
+
     c = canvas.Canvas(output_path, pagesize=page_size)
     c.setTitle(title or "Ukulele Chord Diagrams")
     c.setAuthor("uke-chords-print")
 
-    page_num = 0
-    cur_col = 0
-    cur_row = 0
-    title_offset = 0
-    heading_offset = 0.0   # extra vertical offset from headings
-
-    def _start_page():
-        """Begin a new page and draw its header / footer."""
-        nonlocal page_num, cur_col, cur_row, title_offset, heading_offset
+    for page_num, page in enumerate(pages):
         if page_num > 0:
             c.showPage()
 
-        title_offset = 0
+        # y is the top of the next heading or row
+        y = page_height - MARGIN_TOP
         if title and page_num == 0:
             c.setFont("Helvetica-Bold", TITLE_FONT_SIZE)
-            c.drawCentredString(
-                page_width / 2,
-                page_height - MARGIN_TOP + 2 * mm,
-                title,
-            )
-            title_offset = TITLE_HEIGHT
+            c.drawCentredString(page_width / 2, y + 2 * mm, title)
+            y -= TITLE_HEIGHT
 
         # Page number footer
         c.setFont("Helvetica", 8)
@@ -120,90 +181,40 @@ def generate_pdf(
             f"Page {page_num + 1}",
         )
 
-        cur_col = 0
-        cur_row = 0
-        heading_offset = 0.0
-        page_num += 1
+        for entry in page:
+            # Section heading -- full-width line, compact height
+            if not isinstance(entry, list):
+                c.setFont("Helvetica-Bold", HEADING_FONT_SIZE)
+                c.drawCentredString(
+                    page_width / 2,
+                    y - HEADING_HEIGHT + 2 * mm,
+                    entry.notes,
+                )
+                y -= HEADING_HEIGHT
+                continue
 
-    def _cursor_y() -> float:
-        """Return the y coordinate for the top of the current row."""
-        return (page_height - MARGIN_TOP - title_offset
-                - cur_row * cell_height - heading_offset)
+            # Row of chord diagrams
+            for col, voicing in enumerate(entry):
+                # Hide "Root" inversion label unless --show-root is set
+                if not show_root and voicing.inversion == "Root":
+                    voicing = replace(voicing, inversion="")
 
-    def _remaining_height() -> float:
-        """Return the usable height left on the current page."""
-        return _cursor_y() - MARGIN_BOTTOM
+                # Hide finger numbers inside dots when --no-fingers is set
+                if no_fingers:
+                    voicing = replace(voicing, fingers="")
 
-    # --- Start first page ---
-    _start_page()
+                drawing = draw_chord_diagram(voicing, string_labels=string_labels)
 
-    for voicing in voicings:
-        # Page break sentinel
-        if voicing is PAGE_BREAK:
-            _start_page()
-            continue
+                c.saveState()
+                c.translate(
+                    MARGIN_LEFT + col * cell_width + x_offset,
+                    y - cell_height + y_offset,
+                )
+                c.scale(scale, scale)
+                renderPDF.draw(drawing, c, 0, 0)
+                c.restoreState()
 
-        # Section heading -- full-width line, compact height
-        if is_heading(voicing):
-            # If we're partway through a row, move to the next row first
-            if cur_col > 0:
-                cur_row += 1
-                cur_col = 0
-
-            # Need a new page if there's no room for heading + at least one row
-            if _remaining_height() < HEADING_HEIGHT + cell_height:
-                _start_page()
-
-            y_top = _cursor_y()
-            c.setFont("Helvetica-Bold", HEADING_FONT_SIZE)
-            c.drawCentredString(
-                page_width / 2,
-                y_top - HEADING_HEIGHT + 2 * mm,
-                voicing.notes,
-            )
-
-            # Only consume the compact heading height, not a full row
-            heading_offset += HEADING_HEIGHT
-            cur_col = 0
-            continue
-
-        # --- Normal chord diagram ---
-
-        # New page if not enough room for another row
-        if _remaining_height() < cell_height:
-            _start_page()
-
-        x = MARGIN_LEFT + cur_col * cell_width
-        y = _cursor_y()
-
-        # Center the diagram within the cell
-        x_offset = (cell_width - DIAGRAM_WIDTH * scale) / 2
-        y_offset = (cell_height - DIAGRAM_HEIGHT * scale) / 2
-
-        # Hide "Root" inversion label unless --show-root is set
-        if not show_root and voicing.inversion == "Root":
-            voicing = replace(voicing, inversion="")
-
-        # Hide finger numbers inside dots when --no-fingers is set
-        if no_fingers:
-            voicing = replace(voicing, fingers="")
-
-        drawing = draw_chord_diagram(voicing, string_labels=string_labels)
-
-        draw_x = x + x_offset
-        draw_y = y - cell_height + y_offset
-
-        c.saveState()
-        c.translate(draw_x, draw_y)
-        c.scale(scale, scale)
-        renderPDF.draw(drawing, c, 0, 0)
-        c.restoreState()
-
-        # Advance cursor
-        cur_col += 1
-        if cur_col >= cols:
-            cur_col = 0
-            cur_row += 1
+            y -= cell_height
 
     c.save()
     return output_path

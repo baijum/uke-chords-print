@@ -15,6 +15,7 @@ Text file format (one chord per line):
   - C, 0003                    -> name with explicit frets
   - C, 0003, fingers=___3      -> with fingering
   - C, 0003, fingers=___3, starting_fret=3  -> with starting fret
+                                   (derived from the frets when omitted)
   - ---                         -> force a new page in the PDF
   - = Section Heading            -> section heading rendered in the PDF
   - @tuning standard            -> explicit voicings below are written for
@@ -30,6 +31,7 @@ from dataclasses import dataclass
 
 from .chord_db import lookup_chord
 from .tunings import get_tuning, shapes_compatible
+from .voicing_gen import compute_starting_fret
 
 
 @dataclass
@@ -76,6 +78,36 @@ def validate_frets(frets: str) -> bool:
     return True
 
 
+def _explicit_voicing(name: str, frets: str, kwargs: dict) -> ChordVoicing:
+    """Build an explicit voicing, deriving starting_fret when not given.
+
+    Args:
+        name: Chord name shown above the diagram.
+        frets: Validated 4-character fret string.
+        kwargs: Extra ChordVoicing fields parsed from the input.
+
+    Returns:
+        The ChordVoicing.
+
+    Raises:
+        ValueError: If the fretted notes don't fit the 4 frets a diagram
+            shows.
+    """
+    fret_values = tuple(_parse_fret_value(ch) for ch in frets)
+    if "starting_fret" not in kwargs:
+        kwargs["starting_fret"] = compute_starting_fret(fret_values)
+
+    start = max(kwargs["starting_fret"], 1)
+    fretted = [f for f in fret_values if f > 0]
+    # Diagrams show 4 frets: start .. start + 3
+    if fretted and (min(fretted) < start or max(fretted) > start + 3):
+        raise ValueError(
+            f"Frets '{frets}' don't fit the 4 frets shown from fret {start}. "
+            f"Adjust starting_fret or use a shape spanning at most 4 frets."
+        )
+    return ChordVoicing(name=name, frets=frets, **kwargs)
+
+
 def parse_cli_arg(
     arg: str, single: bool = False, tuning: str = "standard"
 ) -> list[ChordVoicing]:
@@ -110,7 +142,7 @@ def parse_cli_arg(
         elif key == "starting_fret":
             kwargs["starting_fret"] = int(val)
 
-    return [ChordVoicing(name=name, frets=frets, **kwargs)]
+    return [_explicit_voicing(name, frets, kwargs)]
 
 
 def parse_file_line(
@@ -179,7 +211,7 @@ def parse_file_line(
         elif key == "inversion":
             kwargs["inversion"] = val
 
-    return [ChordVoicing(name=name, frets=frets, **kwargs)]
+    return [_explicit_voicing(name, frets, kwargs)]
 
 
 def parse_file(

@@ -100,12 +100,53 @@ def _detect_inversion(
     return labels.get(idx, "")
 
 
-def _compute_starting_fret(frets: tuple[int, ...]) -> int:
+def _required_pcs(
+    component_pcs: list[int], root_pc: int, max_tones: int = 4
+) -> set[int]:
+    """Choose the chord tones every voicing must contain.
+
+    A ukulele has four strings, so chords with more distinct notes (9ths,
+    11ths, 13ths) drop tones the way players do: the perfect 5th first,
+    then inner extensions from the top down. The root, 3rd, 7th and the
+    highest (naming) extension are always kept.
+
+    Args:
+        component_pcs: Chord tone pitch classes in pychord order.
+        root_pc: Pitch class of the chord root.
+        max_tones: Number of strings available.
+
+    Returns:
+        Set of pitch classes a voicing must include. Has more than
+        max_tones entries only if nothing more can be dropped.
+    """
+    tones = list(dict.fromkeys(component_pcs))
+    if len(tones) <= max_tones:
+        return set(tones)
+
+    keep_intervals = {0, 3, 4, 10, 11}  # root, 3rds, 7ths
+    top = tones[-1]
+    droppable = [pc for pc in tones if (pc - root_pc) % 12 == 7]
+    droppable += [
+        pc for pc in reversed(tones)
+        if pc != top and pc not in droppable
+        and (pc - root_pc) % 12 not in keep_intervals
+    ]
+
+    required = list(tones)
+    for pc in droppable:
+        if len(required) <= max_tones:
+            break
+        required.remove(pc)
+    return set(required)
+
+
+def compute_starting_fret(frets: tuple[int, ...]) -> int:
     """Compute starting_fret for diagram display.
 
     If all non-zero frets fit within 1-4, returns 1 (open position).
     Otherwise returns the lowest non-zero fret so the diagram window
-    covers all fretted positions.
+    covers all fretted positions. Muted strings (negative values) are
+    ignored.
     """
     non_zero = [f for f in frets if f > 0]
     if not non_zero or max(non_zero) <= 4:
@@ -200,7 +241,9 @@ def generate_voicings(
 
     Uses pychord to resolve the chord's component notes, then searches
     all fret combinations on the 4 ukulele strings for voicings where
-    every note is a chord tone and all chord tones are present.
+    every note is a chord tone and all required chord tones are present.
+    Chords with more than four distinct notes omit the 5th (and, if
+    needed, inner extensions); see _required_pcs.
 
     Args:
         chord_name: Chord name (e.g., "Am7", "C", "F#dim").
@@ -221,11 +264,13 @@ def generate_voicings(
     try:
         chord = Chord(chord_name)
         components = chord.components()
+        root = chord.root
     except Exception as e:
         raise ValueError(f"Cannot parse chord '{chord_name}': {e}") from e
 
     component_pcs = [_note_to_pc(n) for n in components]
     target_pcs = set(component_pcs)
+    required_pcs = _required_pcs(component_pcs, _note_to_pc(root))
     pc_to_name = {_note_to_pc(n): n for n in components}
 
     # Precompute valid frets per string (only those producing a chord tone)
@@ -244,8 +289,8 @@ def generate_voicings(
         midi_notes = tuple(tuning_midi[i] + frets[i] for i in range(4))
         pcs = tuple(m % 12 for m in midi_notes)
 
-        # All chord tones must be present
-        if set(pcs) != target_pcs:
+        # All required chord tones must be present
+        if not required_pcs <= set(pcs):
             continue
 
         # Playability: fret span check
@@ -258,7 +303,7 @@ def generate_voicings(
         fingers = _assign_fingers(frets)
         note_names = " ".join(pc_to_name[pc] for pc in pcs)
         inversion = _detect_inversion(component_pcs, midi_notes)
-        starting_fret = _compute_starting_fret(frets)
+        starting_fret = compute_starting_fret(frets)
 
         score = _score_voicing(frets)
 
