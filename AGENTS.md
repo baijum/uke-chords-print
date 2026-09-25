@@ -135,7 +135,9 @@ the globbed directories, to the loop in `generate_catalog.sh`.
 
 **Change diagram appearance:** edit the constants at the top of `diagram.py`.
 Everything is drawn in a fixed `DIAGRAM_WIDTH × DIAGRAM_HEIGHT` box that
-`pdf_generator` scales, so keep new elements inside the padding areas. Output
+`pdf_generator` scales, so keep new elements inside the padding areas;
+size centred text with `_fit_font_size` so it can't spill into neighbouring
+cells at high `--cols`. Output
 must stay print-friendly (black/white plus the single dark-green dot color).
 
 ## Verifying changes

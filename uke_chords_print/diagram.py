@@ -19,6 +19,7 @@ from reportlab.graphics.shapes import (
 )
 from reportlab.graphics import renderPDF
 from reportlab.lib.colors import black, white, HexColor
+from reportlab.pdfbase.pdfmetrics import stringWidth
 
 from .parser import ChordVoicing
 
@@ -61,6 +62,27 @@ NOTE_SIZE = 12
 FRETS_DISPLAY_SIZE = 14
 INVERSION_SIZE = 14
 
+# Widest label that stays inside the diagram when centred on the fretboard
+# (1mm clear of each edge), so labels never spill into neighbouring cells.
+LABEL_MAX_WIDTH = 2 * (PAD_RIGHT + FRETBOARD_WIDTH / 2) - 2 * mm
+
+
+def _fit_font_size(text: str, font_name: str, font_size: float) -> float:
+    """Shrink font_size if needed so text fits within LABEL_MAX_WIDTH.
+
+    Args:
+        text: The label text.
+        font_name: ReportLab font name.
+        font_size: Preferred font size in points.
+
+    Returns:
+        font_size, or a smaller size at which the text fits.
+    """
+    width = stringWidth(text, font_name, font_size)
+    if width <= LABEL_MAX_WIDTH:
+        return font_size
+    return font_size * LABEL_MAX_WIDTH / width
+
 
 def draw_chord_diagram(
     voicing: ChordVoicing,
@@ -73,7 +95,7 @@ def draw_chord_diagram(
         voicing: The chord voicing to render.
         string_labels: Optional tuple of string labels (e.g., ("D", "G", "B", "E")
             for baritone). If provided, they are appended to the frets line
-            below the diagram (e.g., "0 - 0 - 0 - 3  (D-G-B-E)").
+            below the diagram (e.g., "0-0-0-3  (D-G-B-E)").
 
     Returns a Drawing object of size DIAGRAM_WIDTH x DIAGRAM_HEIGHT.
     """
@@ -211,7 +233,7 @@ def draw_chord_diagram(
         fb_left + FRETBOARD_WIDTH / 2,
         DIAGRAM_HEIGHT - 4 * mm,
         voicing.name,
-        fontSize=CHORD_NAME_SIZE,
+        fontSize=_fit_font_size(voicing.name, "Helvetica-Bold", CHORD_NAME_SIZE),
         fillColor=LABEL_COLOR,
         textAnchor="middle",
         fontName="Helvetica-Bold",
@@ -233,15 +255,16 @@ def draw_chord_diagram(
                 ))
 
     # --- Frets string below notes (with tuning indicator for non-standard tunings) ---
-    frets_display = " - ".join(frets_str)
     if string_labels:
-        tuning_str = "-".join(string_labels)
-        frets_display = f"{frets_display}  ({tuning_str})"
+        # Compact form mirrors the tuning label: "0-0-0-3  (A-D-F#-B)"
+        frets_display = f"{'-'.join(frets_str)}  ({'-'.join(string_labels)})"
+    else:
+        frets_display = " - ".join(frets_str)
     d.add(String(
         fb_left + FRETBOARD_WIDTH / 2,
         fb_bottom - 11 * mm,
         frets_display,
-        fontSize=FRETS_DISPLAY_SIZE if not string_labels else 11,
+        fontSize=_fit_font_size(frets_display, "Courier-Bold", FRETS_DISPLAY_SIZE),
         fillColor=HexColor("#333333"),
         textAnchor="middle",
         fontName="Courier-Bold",
