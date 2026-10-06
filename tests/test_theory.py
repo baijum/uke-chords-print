@@ -126,7 +126,32 @@ EQUIVALENT_SPELLINGS = [
     ("Cmaj7/9", "Cmaj9"),
     ("Cm6/9", "Cm69"),
     ("C6/9/E", "C69/E"),
+    ("Cma", "C"),
+    ("F#ma", "F#"),
+    ("C^", "C"),
+    ("C^7", "Cmaj7"),
+    ("C^9", "Cmaj9"),
+    ("Cdom7", "C7"),
+    ("Cdom9", "C9"),
+    ("Cdom13", "C13"),
+    ("C+M7", "Cmaj7#5"),
 ]
+
+
+# Chord types registered with pychord from _EXTRA_QUALITIES that chords-db has
+# no suffix for, so they can't live in support.FORMULAS (its keys must match
+# the dataset's suffix list exactly).
+EXTRA_QUALITY_FORMULAS = [
+    ("m13", (0, 3, 7, 10, 2, 9)),      # 1 b3 5 b7 9 13
+    ("maj9#11", (0, 4, 7, 11, 2, 6)),  # 1 3 5 7 9 #11
+]
+
+
+@pytest.mark.parametrize("quality, intervals", EXTRA_QUALITY_FORMULAS)
+@pytest.mark.parametrize("root", ["C", "F#", "Bb"])
+def test_registered_extra_quality_tones(quality, intervals, root):
+    root_pc = PITCH_CLASS[root]
+    assert _pcs(root + quality) == {(root_pc + i) % 12 for i in intervals}
 
 
 @pytest.mark.parametrize("spelling, canonical", EQUIVALENT_SPELLINGS)

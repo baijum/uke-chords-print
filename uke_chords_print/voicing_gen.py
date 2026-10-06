@@ -47,8 +47,10 @@ _SLASH_EXTENSIONS = {"6/9": "69", "7/9": "9", "7/13": "13"}
 # pychord writes them). Extended chords list only the tones players use.
 _EXTRA_QUALITIES: dict[str, tuple[str, ...]] = {
     "maj7b5": ("1", "3", "b5", "7"),
+    "maj9#11": ("1", "3", "5", "7", "9", "#11"),
     "maj11": ("1", "3", "5", "7", "9", "11"),
     "m9b5": ("1", "b3", "b5", "b7", "9"),
+    "m13": ("1", "b3", "5", "b7", "9", "13"),
     "mM7b5": ("1", "b3", "b5", "7"),
     "mM9": ("1", "b3", "5", "7", "9"),
     "mM11": ("1", "b3", "5", "7", "9", "11"),
@@ -72,18 +74,20 @@ _register_extra_qualities()
 _QUALITY_RULES: list[tuple[str, str]] = [
     (r"[()]", ""),                       # C7(#9) -> C7#9, Cm(maj7) -> Cmmaj7
     (r"^(min|mi|-)", "m"),               # Cmi, Cmin7, C-7 -> Cm, Cm7
+    (r"^dom(?=\d)", ""),                 # Cdom7, Cdom9 -> C7, C9
     (r"ø7?", "m7b5"),                    # Cø, Cø7 -> Cm7b5
     (r"^[°o]", "dim"),                   # C°, Co7 -> Cdim, Cdim7
     (r"Δ(?!\d)", "maj7"),                # CΔ, CmΔ -> Cmaj7, Cmmaj7
-    (r"Δ|Maj|ma(?=\d)", "maj"),          # CΔ9, CMaj7, Cma7 -> Cmaj9, Cmaj7
+    (r"Δ|Maj|ma(?=\d|$)", "maj"),        # CΔ9, CMaj7, Cma7, Cma -> Cmaj9, Cmaj7, Cmaj
     (r"^M(?=\d)", "maj"),                # CM7b5, CM11 -> Cmaj7b5, Cmaj11
+    (r"^\^", "maj"),                     # C^, C^7 -> Cmaj, Cmaj7
     (r"^mmaj(?=\d)", "mM"),              # Cmmaj9, Cm(maj9) -> CmM9
     (r"(?<=\d)-5", "b5"),                # Cm9-5 -> Cm9b5
     (r"^M$", ""),                        # CM -> C
     (r"^\+$", "aug"),                    # C+ -> Caug
     (r"^(\+7|7\+|aug7|7aug)$", "7+5"),    # C+7, Caug7 -> C7+5
     (r"^(\+9|9\+|aug9|9aug)$", "9+5"),    # C+9, Caug9 -> C9+5
-    (r"^(\+maj7|maj7\+|maj7aug|maj7#5)$", "maj7+5"),  # Cmaj7#5 -> Cmaj7+5
+    (r"^(\+maj7|maj7\+|maj7aug|maj7#5|\+M7)$", "maj7+5"),  # Cmaj7#5, C+M7 -> Cmaj7+5
     (r"(?<=\d)sus$", "sus4"),            # C7sus -> C7sus4
     (r"add2$", "add9"),                  # Cadd2, Cmadd2 -> Cadd9, Cmadd9
 ]
@@ -371,10 +375,11 @@ def _pychord_name(chord_name: str) -> str:
 
     Common chord-chart spellings pychord doesn't know are respelled too:
     ♭/♯ -> b/#, "+" -> aug, "°"/"o" -> dim, "ø" -> m7b5, "Δ" -> maj7,
-    "m/maj7" and "m(maj7)" -> mM7, "mi"/"min7"/"-7" -> m/m7, "7(#9)" ->
-    7#9, "maj7#5" -> maj7+5, "aug9" -> 9+5, "7sus" -> 7sus4 (see
-    _QUALITY_RULES). Chord types pychord lacks entirely (maj7b5, maj11,
-    m9b5, mM9, ...) are registered from _EXTRA_QUALITIES.
+    "m/maj7" and "m(maj7)" -> mM7, "mi"/"min7"/"-7" -> m/m7, "ma" -> maj,
+    "dom7" -> 7, "^7" -> maj7, "7(#9)" -> 7#9, "maj7#5"/"+M7" -> maj7+5,
+    "aug9" -> 9+5, "7sus" -> 7sus4 (see _QUALITY_RULES). Chord types pychord
+    lacks entirely (maj7b5, maj9#11, maj11, m9b5, m13, mM9, ...) are
+    registered from _EXTRA_QUALITIES.
 
     Args:
         chord_name: Chord name as written by the user.
